@@ -1,16 +1,16 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { addTeamWarning, getTeamWarnings } from '../../database/warnings.js';
+import { addWarning, getUserWarnings } from '../../database/warnings.js';
 import { getConfig } from '../../database/config.js';
 import { hasPermission, noPermissionReply } from '../../utils/permissions.js';
-import { successEmbed, warningEmbed } from '../../utils/embeds.js';
+import { warningEmbed } from '../../utils/embeds.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName('teamwarn')
-        .setDescription('Warnt ein ganzes Team (Rolle)')
-        .addRoleOption(option =>
-            option.setName('role')
-                .setDescription('Die Team-Rolle, die gewarnt werden soll')
+        .setDescription('Warnt einen Team-Member')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('Der User, der gewarnt werden soll')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('reason')
@@ -22,29 +22,29 @@ export default {
             return noPermissionReply(interaction);
         }
 
-        const role = interaction.options.getRole('role');
+        const user = interaction.options.getUser('user');
         const reason = interaction.options.getString('reason');
 
-        const warnId = addTeamWarning(
+        const warnId = addWarning(
             interaction.guildId,
-            role.id,
+            user.id,
             interaction.user.id,
             reason
         );
 
-        const warnings = getTeamWarnings(interaction.guildId, role.id);
+        const warnings = getUserWarnings(interaction.guildId, user.id);
 
         const embed = warningEmbed(
-            'Team gewarnt',
-            `**Team:** ${role}\n**Grund:** ${reason}\n**Gewarnt von:** ${interaction.user}\n**Anzahl Warnungen:** ${warnings.length}\n**Warn-ID:** #${warnId}`
+            'Team-Member gewarnt',
+            `**User:** ${user}\n**Grund:** ${reason}\n**Gewarnt von:** ${interaction.user}\n**Anzahl Warnungen:** ${warnings.length}\n**Warn-ID:** #${warnId}`
         );
 
-        // Log Channel
-        const logChannelId = getConfig(interaction.guildId, 'warn_log_channel');
-        if (logChannelId) {
-            const logChannel = interaction.guild.channels.cache.get(logChannelId);
-            if (logChannel) {
-                await logChannel.send({ embeds: [embed] });
+        // TeamUpdates Channel
+        const teamUpdatesChannelId = getConfig(interaction.guildId, 'teamupdates_channel');
+        if (teamUpdatesChannelId) {
+            const teamUpdatesChannel = interaction.guild.channels.cache.get(teamUpdatesChannelId);
+            if (teamUpdatesChannel) {
+                await teamUpdatesChannel.send({ embeds: [embed] });
             }
         }
 

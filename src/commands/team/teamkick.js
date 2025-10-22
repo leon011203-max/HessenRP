@@ -37,16 +37,16 @@ export default {
             await member.kick(reason);
 
             const embed = successEmbed(
-                'Team-Mitglied gekickt',
-                `${user} wurde vom Server gekickt.\n**Grund:** ${reason}`
+                'Team-Mitglied gekickt 👋',
+                `**User:** ${user}\n**Grund:** ${reason}\n**Gekickt von:** ${interaction.user}`
             );
 
-            // Log Channel
-            const logChannelId = getConfig(interaction.guildId, 'team_log_channel');
-            if (logChannelId) {
-                const logChannel = interaction.guild.channels.cache.get(logChannelId);
-                if (logChannel) {
-                    await logChannel.send({ embeds: [embed] });
+            // TeamUpdates Channel
+            const teamUpdatesChannelId = getConfig(interaction.guildId, 'teamupdates_channel');
+            if (teamUpdatesChannelId) {
+                const teamUpdatesChannel = interaction.guild.channels.cache.get(teamUpdatesChannelId);
+                if (teamUpdatesChannel) {
+                    await teamUpdatesChannel.send({ embeds: [embed] });
                 }
             }
 

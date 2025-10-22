@@ -7,10 +7,10 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 ## Features
 
 ### Team Management
-- `/teamnew` - Gibt einem Mitglied die konfigurierte Team-Rolle
-- `/teamuprank` - Gibt einem Mitglied die konfigurierte Uprank-Rolle
-- `/teamkick` - Kickt ein Mitglied vom Server
-- `/teamwarn` - Warnt ein ganzes Team (Rolle)
+- `/teamnew` - Fügt ein neues Team-Mitglied hinzu (User + Rolle wählen, sendet Willkommensnachricht)
+- `/teamuprank` - Stuft ein Team-Mitglied hoch (User + neue Rolle wählen)
+- `/teamkick` - Kickt ein Team-Mitglied vom Server
+- `/teamwarn` - Warnt einen Team-Member
 
 ### Warn Management
 - `/deletewarn` - Löscht eine Warnung
@@ -74,18 +74,12 @@ ADMIN_IDS=123456789012345678,987654321098765432
 ```
 
 ### Bot-Einstellungen
-Alle anderen Einstellungen werden im Discord per Command konfiguriert:
+Der TeamUpdates Channel wird im Discord per Command konfiguriert:
 
-#### Rollen konfigurieren
+#### TeamUpdates Channel konfigurieren
+Hier werden alle Team-Events gepostet (neue Mitglieder, Upranks, Kicks, Warnungen):
 ```
-/setconfig key:team_new_role value:<RollenID>
-/setconfig key:team_uprank_role value:<RollenID>
-```
-
-#### Log-Channels konfigurieren
-```
-/setconfig key:warn_log_channel value:<ChannelID>
-/setconfig key:team_log_channel value:<ChannelID>
+/setconfig key:teamupdates_channel value:<ChannelID>
 ```
 
 #### Konfiguration anzeigen
@@ -97,15 +91,15 @@ Alle anderen Einstellungen werden im Discord per Command konfiguriert:
 
 ### Team-Mitglied hinzufügen
 ```
-/teamnew user:@Username
+/teamnew user:@Username rolle:@Rolle
 ```
-Gibt dem User die konfigurierte Team-Rolle.
+Fügt ein neues Mitglied zum Team hinzu. Der User erhält die ausgewählte Rolle und bekommt eine Willkommensnachricht per DM.
 
 ### Team-Mitglied hochstufen
 ```
-/teamuprank user:@Username
+/teamuprank user:@Username rolle:@NeueRolle
 ```
-Gibt dem User die konfigurierte Uprank-Rolle.
+Stuft ein Team-Mitglied hoch und gibt ihm eine neue Rolle.
 
 ### Team-Mitglied kicken
 ```
@@ -113,11 +107,11 @@ Gibt dem User die konfigurierte Uprank-Rolle.
 ```
 Kickt den User vom Server.
 
-### Team warnen
+### Team-Member warnen
 ```
-/teamwarn role:@TeamRolle reason:"Grund"
+/teamwarn user:@Username reason:"Grund"
 ```
-Erstellt eine Warnung für das gesamte Team.
+Warnt einen Team-Member. Die Warnung wird gespeichert und im TeamUpdates Channel gepostet.
 
 ### Warnungen verwalten
 ```
