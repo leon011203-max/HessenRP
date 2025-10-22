@@ -16,6 +16,10 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 - `/deletewarn` - Löscht eine Warnung
 - `/showwarns` - Zeigt alle Warnungen eines Users oder Teams an
 
+### Welcome System
+- Automatische Willkommensnachricht wenn ein User dem Server beitritt
+- Konfigurierbar über Welcome Channel
+
 ### Configuration
 - `/setconfig` - Setzt Bot-Konfigurationen (nur für Admins)
 - `/showconfig` - Zeigt alle Bot-Konfigurationen an
@@ -74,12 +78,18 @@ ADMIN_IDS=123456789012345678,987654321098765432
 ```
 
 ### Bot-Einstellungen
-Der TeamUpdates Channel wird im Discord per Command konfiguriert:
+Channels werden im Discord per Command konfiguriert:
 
 #### TeamUpdates Channel konfigurieren
 Hier werden alle Team-Events gepostet (neue Mitglieder, Upranks, Kicks, Warnungen):
 ```
 /setconfig key:teamupdates_channel value:<ChannelID>
+```
+
+#### Welcome Channel konfigurieren
+Hier werden Willkommensnachrichten für neue Server-Mitglieder gepostet:
+```
+/setconfig key:welcome_channel value:<ChannelID>
 ```
 
 #### Konfiguration anzeigen

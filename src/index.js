@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
 import { initDatabase } from './database/init.js';
+import { getConfig } from './database/config.js';
+import { successEmbed } from './utils/embeds.js';
 
 config();
 
@@ -91,6 +93,35 @@ client.on('interactionCreate', async interaction => {
         } else {
             await interaction.reply(errorMessage);
         }
+    }
+});
+
+// Willkommens-Event für neue Mitglieder
+client.on('guildMemberAdd', async member => {
+    try {
+        const welcomeChannelId = getConfig(member.guild.id, 'welcome_channel');
+
+        if (!welcomeChannelId) {
+            console.log('Kein Welcome Channel konfiguriert');
+            return;
+        }
+
+        const welcomeChannel = member.guild.channels.cache.get(welcomeChannelId);
+
+        if (!welcomeChannel) {
+            console.log('Welcome Channel nicht gefunden');
+            return;
+        }
+
+        const embed = successEmbed(
+            'Willkommen auf dem Server! 🎉',
+            `Herzlich willkommen ${member}!\n\nSchön, dass du da bist! Wir wünschen dir viel Spaß auf unserem Server.\n\nViel Erfolg und eine tolle Zeit! 🚀`
+        );
+
+        await welcomeChannel.send({ embeds: [embed] });
+        console.log(`Willkommensnachricht für ${member.user.tag} gesendet`);
+    } catch (error) {
+        console.error('Fehler beim Senden der Willkommensnachricht:', error);
     }
 });
 

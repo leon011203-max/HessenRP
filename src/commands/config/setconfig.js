@@ -12,7 +12,8 @@ export default {
                 .setDescription('Konfigurationsschlüssel')
                 .setRequired(true)
                 .addChoices(
-                    { name: 'TeamUpdates Channel', value: 'teamupdates_channel' }
+                    { name: 'TeamUpdates Channel', value: 'teamupdates_channel' },
+                    { name: 'Welcome Channel', value: 'welcome_channel' }
                 ))
         .addStringOption(option =>
             option.setName('value')
