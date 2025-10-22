@@ -39,19 +39,34 @@ export function setTicketConfig(guildId, config) {
 export function getTicketConfig(guildId) {
     const allConfigs = readJsonFile(TICKET_CONFIG_FILE) || {};
     return allConfigs[guildId] || {
-        categories: {},
         panelChannelId: null,
-        ticketCategoryId: null
+        categoryChannels: {},
+        categoryPermissions: {}
     };
 }
 
 /**
- * Setzt Kategorie-Berechtigungen
+ * Setzt Discord-Kategorie für eine Ticket-Kategorie
  */
-export function setCategoryPermissions(guildId, category, roleIds) {
+export function setCategoryChannel(guildId, ticketCategory, channelId) {
     const config = getTicketConfig(guildId);
-    if (!config.categories) config.categories = {};
-    config.categories[category] = roleIds;
+    if (!config.categoryChannels) config.categoryChannels = {};
+    config.categoryChannels[ticketCategory] = channelId;
+    setTicketConfig(guildId, config);
+}
+
+/**
+ * Fügt eine Rolle zu den Berechtigungen einer Kategorie hinzu
+ */
+export function addCategoryPermission(guildId, ticketCategory, roleId) {
+    const config = getTicketConfig(guildId);
+    if (!config.categoryPermissions) config.categoryPermissions = {};
+    if (!config.categoryPermissions[ticketCategory]) {
+        config.categoryPermissions[ticketCategory] = [];
+    }
+    if (!config.categoryPermissions[ticketCategory].includes(roleId)) {
+        config.categoryPermissions[ticketCategory].push(roleId);
+    }
     setTicketConfig(guildId, config);
 }
 

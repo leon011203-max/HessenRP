@@ -22,9 +22,11 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 - Automatische Willkommensnachricht wenn ein User dem Server beitritt
 - Konfigurierbar über Welcome Channel
 
-### Ticket-System (RP-optimiert)
+### Ticket-System (RP-optimiert, Components v2)
 - **Dropdown-Menu** mit 6 Kategorien: Support, Analyse, Donator, Fraktions-Antrag, High Team, Sonstiges
-- **Berechtigungssystem:** Pro Kategorie konfigurierbare Rollen
+- **Components v2:** Buttons sind direkt in den Nachrichten integriert (SectionBuilder)
+- **Individuelle Kategorien:** Jede Ticket-Kategorie kann eine eigene Discord-Kategorie haben
+- **Berechtigungssystem:** Unbegrenzt viele Rollen pro Kategorie konfigurierbar
 - **Claim-System:** Teamler können Tickets claimen
 - **Status-Anzeige:** Automatische Umbenennung mit Emojis:
   - 🟠 Bei Bearbeitung (geclaimed)
@@ -118,11 +120,19 @@ Hier werden Willkommensnachrichten für neue Server-Mitglieder gepostet:
 # 1. Panel-Channel setzen (wo das Ticket-Dropdown angezeigt wird)
 /ticketsetup panel channel:#tickets
 
-# 2. Ticket-Kategorie setzen (wo neue Ticket-Channels erstellt werden)
-/ticketsetup category category:Tickets
+# 2. Discord-Kategorie für jede Ticket-Kategorie setzen
+#    (Jede Ticket-Kategorie kann eine eigene Discord-Kategorie haben)
+/ticketsetup category ticketcategory:support discordcategory:Support-Tickets
+/ticketsetup category ticketcategory:analyse discordcategory:Analyse-Tickets
+/ticketsetup category ticketcategory:donator discordcategory:Donator-Tickets
+/ticketsetup category ticketcategory:fraktion discordcategory:Fraktions-Anträge
+/ticketsetup category ticketcategory:highteam discordcategory:High-Team-Tickets
+/ticketsetup category ticketcategory:sonstiges discordcategory:Sonstige-Tickets
 
-# 3. Berechtigungen pro Kategorie setzen
+# 3. Berechtigungen pro Kategorie setzen (unbegrenzt viele Rollen möglich)
+#    Führe den Befehl mehrfach aus, um mehrere Rollen hinzuzufügen:
 /ticketsetup permissions ticketcategory:support rolle:@Support
+/ticketsetup permissions ticketcategory:support rolle:@Team-Leitung
 /ticketsetup permissions ticketcategory:analyse rolle:@Analyse-Team
 /ticketsetup permissions ticketcategory:donator rolle:@Donator-Support
 /ticketsetup permissions ticketcategory:fraktion rolle:@Fraktions-Leitung
@@ -198,17 +208,22 @@ HessenRP/
 │   ├── commands/
 │   │   ├── config/          # Konfigurationsbefehle
 │   │   ├── team/            # Team-Management Befehle
-│   │   └── warnings/        # Warn-Management Befehle
+│   │   ├── warnings/        # Warn-Management Befehle
+│   │   └── tickets/         # Ticket-System Befehle
 │   ├── database/
 │   │   ├── init.js          # JSON-Dateien Initialisierung
 │   │   ├── config.js        # Config Management (JSON)
-│   │   └── warnings.js      # Warn Management (JSON)
+│   │   ├── warnings.js      # Warn Management (JSON)
+│   │   └── tickets.js       # Ticket Management (JSON)
+│   ├── events/
+│   │   ├── welcome.js       # Welcome System Event Handler
+│   │   └── ticketHandler.js # Ticket Interaction Handler
 │   ├── utils/
 │   │   ├── permissions.js   # Berechtigungsprüfungen
 │   │   └── embeds.js        # Embed-Helpers
 │   ├── index.js             # Hauptdatei
 │   └── deploy-commands.js   # Command Deployment
-├── data/                    # JSON-Dateien für Daten (config.json, warnings.json, team_warnings.json)
+├── data/                    # JSON-Dateien für Daten (config, warnings, tickets)
 ├── .env                     # Umgebungsvariablen
 └── package.json
 ```
@@ -218,15 +233,11 @@ HessenRP/
 Der Bot benötigt folgende Discord-Berechtigungen:
 - Manage Roles
 - Kick Members
+- Manage Channels (für Ticket-System)
 - Send Messages
 - Use Slash Commands
 - Read Message History
 - View Channels
-
-## Zukünftige Features
-
-- Ticket System (geplant)
-- Weitere modulare Erweiterungen
 
 ## Lizenz
 

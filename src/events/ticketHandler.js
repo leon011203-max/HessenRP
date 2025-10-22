@@ -1,4 +1,4 @@
-import { ChannelType, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { ChannelType, PermissionFlagsBits, SectionBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import { createTicket, getTicketByChannel, updateTicketStatus, deleteTicket, getTicketConfig } from '../database/tickets.js';
 import { successEmbed, errorEmbed } from '../utils/embeds.js';
 
@@ -15,17 +15,20 @@ export async function handleTicketCreate(interaction) {
     const category = interaction.values[0];
     const config = getTicketConfig(interaction.guild.id);
 
-    if (!config.ticketCategoryId) {
-        const embed = errorEmbed('Setup unvollständig', 'Ticket-Kategorie wurde nicht konfiguriert.');
+    if (!config.categoryChannels || !config.categoryChannels[category]) {
+        const embed = errorEmbed(
+            'Setup unvollständig',
+            `Die Kategorie **${category}** wurde nicht konfiguriert.\nBitte konfiguriere sie mit:\n\`/ticketsetup category ticketcategory:${category}\``
+        );
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Erstelle Ticket-Channel
     try {
-        const ticketCategory = interaction.guild.channels.cache.get(config.ticketCategoryId);
+        const ticketCategory = interaction.guild.channels.cache.get(config.categoryChannels[category]);
 
         if (!ticketCategory) {
-            const embed = errorEmbed('Fehler', 'Ticket-Kategorie nicht gefunden.');
+            const embed = errorEmbed('Fehler', `Kategorie für **${category}** nicht gefunden.`);
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
@@ -46,8 +49,8 @@ export async function handleTicketCreate(interaction) {
         });
 
         // Füge Berechtigungen für die konfigurierten Rollen hinzu
-        if (config.categories && config.categories[category]) {
-            for (const roleId of config.categories[category]) {
+        if (config.categoryPermissions && config.categoryPermissions[category]) {
+            for (const roleId of config.categoryPermissions[category]) {
                 await ticketChannel.permissionOverwrites.create(roleId, {
                     ViewChannel: true,
                     SendMessages: true,
@@ -59,34 +62,29 @@ export async function handleTicketCreate(interaction) {
         // Speichere Ticket in Datenbank
         const ticket = createTicket(interaction.guild.id, ticketChannel.id, interaction.user.id, category);
 
-        // Erstelle Ticket-Embed mit Buttons
-        const ticketEmbed = new EmbedBuilder()
-            .setColor(0x0099ff)
-            .setTitle(`🎫 Ticket: ${CATEGORY_NAMES[category]}`)
-            .setDescription(
-                `Hallo ${interaction.user}!\n\n` +
-                `Dein Ticket wurde erstellt. Ein Team-Mitglied wird sich bald um dein Anliegen kümmern.\n\n` +
-                `**Kategorie:** ${CATEGORY_NAMES[category]}\n` +
-                `**Ticket-ID:** #${ticket.id}`
+        // Erstelle Section mit Text und Button
+        const ticketSection = new SectionBuilder()
+            .addTextDisplayComponents(
+                (textDisplay) =>
+                    textDisplay.setContent(
+                        `**🎫 Ticket: ${CATEGORY_NAMES[category]}**\n\n` +
+                        `Hallo ${interaction.user}!\n\n` +
+                        `Dein Ticket wurde erstellt. Ein Team-Mitglied wird sich bald um dein Anliegen kümmern.\n\n` +
+                        `**Kategorie:** ${CATEGORY_NAMES[category]}\n` +
+                        `**Ticket-ID:** #${ticket.id}`
+                    )
             )
-            .setFooter({ text: 'Bitte beschreibe dein Anliegen' })
-            .setTimestamp();
-
-        const buttons = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
+            .setButtonAccessory((button) =>
+                button
                     .setCustomId('ticket_claim')
                     .setLabel('Claim')
-                    .setEmoji('✋')
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId('ticket_close')
-                    .setLabel('Schließen')
-                    .setEmoji('🔒')
-                    .setStyle(ButtonStyle.Danger)
+                    .setStyle(ButtonStyle.Primary)
             );
 
-        await ticketChannel.send({ embeds: [ticketEmbed], components: [buttons] });
+        await ticketChannel.send({
+            components: [ticketSection],
+            flags: MessageFlags.IsComponentsV2
+        });
 
         const embed = successEmbed(
             'Ticket erstellt',
@@ -120,33 +118,43 @@ export async function handleTicketClaim(interaction) {
     // Update Channel-Name mit orangenem Kreis
     await interaction.channel.setName(`🟠-${interaction.channel.name}`);
 
-    const embed = successEmbed(
-        'Ticket beansprucht',
-        `${interaction.user} bearbeitet nun dieses Ticket.`
-    );
-
-    // Neue Buttons
-    const buttons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
+    // Neue Section mit Annehmen/Ablehnen Buttons
+    const claimedSection = new SectionBuilder()
+        .addTextDisplayComponents(
+            (textDisplay) =>
+                textDisplay.setContent(
+                    `**✋ Ticket beansprucht**\n\n` +
+                    `${interaction.user} bearbeitet nun dieses Ticket.\n\n` +
+                    `Nutze die Buttons um das Ticket anzunehmen oder abzulehnen.`
+                )
+        )
+        .setButtonAccessory((button) =>
+            button
                 .setCustomId('ticket_accept')
                 .setLabel('Annehmen')
-                .setEmoji('✅')
-                .setStyle(ButtonStyle.Success),
-            new ButtonBuilder()
+                .setStyle(ButtonStyle.Success)
+        );
+
+    const denySection = new SectionBuilder()
+        .setButtonAccessory((button) =>
+            button
                 .setCustomId('ticket_deny')
                 .setLabel('Ablehnen')
-                .setEmoji('❌')
-                .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
+                .setStyle(ButtonStyle.Danger)
+        );
+
+    const closeSection = new SectionBuilder()
+        .setButtonAccessory((button) =>
+            button
                 .setCustomId('ticket_close')
                 .setLabel('Schließen')
-                .setEmoji('🔒')
                 .setStyle(ButtonStyle.Secondary)
         );
 
-    await interaction.update({ components: [buttons] });
-    await interaction.channel.send({ embeds: [embed] });
+    await interaction.update({
+        components: [claimedSection, denySection, closeSection],
+        flags: MessageFlags.IsComponentsV2
+    });
 }
 
 export async function handleTicketAccept(interaction) {
@@ -164,23 +172,26 @@ export async function handleTicketAccept(interaction) {
     const newName = interaction.channel.name.replace(/🟠-/, '✅-');
     await interaction.channel.setName(newName);
 
-    const embed = successEmbed(
-        'Ticket angenommen',
-        `Dieses Ticket wurde von ${interaction.user} angenommen.`
-    );
-
-    // Button zum Schließen
-    const buttons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
+    // Section mit Erfolg und Schließen-Button
+    const acceptedSection = new SectionBuilder()
+        .addTextDisplayComponents(
+            (textDisplay) =>
+                textDisplay.setContent(
+                    `**✅ Ticket angenommen**\n\n` +
+                    `Dieses Ticket wurde von ${interaction.user} angenommen.`
+                )
+        )
+        .setButtonAccessory((button) =>
+            button
                 .setCustomId('ticket_close')
                 .setLabel('Schließen')
-                .setEmoji('🔒')
                 .setStyle(ButtonStyle.Danger)
         );
 
-    await interaction.update({ components: [buttons] });
-    await interaction.channel.send({ embeds: [embed] });
+    await interaction.update({
+        components: [acceptedSection],
+        flags: MessageFlags.IsComponentsV2
+    });
 }
 
 export async function handleTicketDeny(interaction) {
@@ -198,23 +209,26 @@ export async function handleTicketDeny(interaction) {
     const newName = interaction.channel.name.replace(/🟠-/, '❌-');
     await interaction.channel.setName(newName);
 
-    const embed = errorEmbed(
-        'Ticket abgelehnt',
-        `Dieses Ticket wurde von ${interaction.user} abgelehnt.`
-    );
-
-    // Button zum Schließen
-    const buttons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
+    // Section mit Ablehnung und Schließen-Button
+    const deniedSection = new SectionBuilder()
+        .addTextDisplayComponents(
+            (textDisplay) =>
+                textDisplay.setContent(
+                    `**❌ Ticket abgelehnt**\n\n` +
+                    `Dieses Ticket wurde von ${interaction.user} abgelehnt.`
+                )
+        )
+        .setButtonAccessory((button) =>
+            button
                 .setCustomId('ticket_close')
                 .setLabel('Schließen')
-                .setEmoji('🔒')
                 .setStyle(ButtonStyle.Danger)
         );
 
-    await interaction.update({ components: [buttons] });
-    await interaction.channel.send({ embeds: [embed] });
+    await interaction.update({
+        components: [deniedSection],
+        flags: MessageFlags.IsComponentsV2
+    });
 }
 
 export async function handleTicketClose(interaction) {
@@ -225,12 +239,20 @@ export async function handleTicketClose(interaction) {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    const embed = successEmbed(
-        'Ticket wird geschlossen',
-        'Dieser Channel wird in 5 Sekunden gelöscht.'
-    );
+    // Section mit Schließen-Nachricht
+    const closingSection = new SectionBuilder()
+        .addTextDisplayComponents(
+            (textDisplay) =>
+                textDisplay.setContent(
+                    `**🔒 Ticket wird geschlossen**\n\n` +
+                    `Dieser Channel wird in **5 Sekunden** gelöscht.`
+                )
+        );
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({
+        components: [closingSection],
+        flags: MessageFlags.IsComponentsV2
+    });
 
     // Lösche Ticket aus Datenbank
     deleteTicket(interaction.channel.id);
