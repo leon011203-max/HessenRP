@@ -1,4 +1,4 @@
-import { ChannelType, PermissionFlagsBits, SectionBuilder, ButtonStyle, MessageFlags } from 'discord.js';
+import { ChannelType, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import { createTicket, getTicketByChannel, updateTicketStatus, deleteTicket, getTicketConfig } from '../database/tickets.js';
 import { successEmbed, errorEmbed } from '../utils/embeds.js';
 
@@ -62,28 +62,32 @@ export async function handleTicketCreate(interaction) {
         // Speichere Ticket in Datenbank
         const ticket = createTicket(interaction.guild.id, ticketChannel.id, interaction.user.id, category);
 
-        // Erstelle Section mit Text und Button
-        const ticketSection = new SectionBuilder()
-            .addTextDisplayComponents(
-                (textDisplay) =>
-                    textDisplay.setContent(
-                        `**🎫 Ticket: ${CATEGORY_NAMES[category]}**\n\n` +
-                        `Hallo ${interaction.user}!\n\n` +
-                        `Dein Ticket wurde erstellt. Ein Team-Mitglied wird sich bald um dein Anliegen kümmern.\n\n` +
-                        `**Kategorie:** ${CATEGORY_NAMES[category]}\n` +
-                        `**Ticket-ID:** #${ticket.id}`
-                    )
+        // Erstelle Embed
+        const ticketEmbed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle(`🎫 Ticket: ${CATEGORY_NAMES[category]}`)
+            .setDescription(
+                `Hallo ${interaction.user}!\n\n` +
+                `Dein Ticket wurde erstellt. Ein Team-Mitglied wird sich bald um dein Anliegen kümmern.`
             )
-            .setButtonAccessory((button) =>
-                button
-                    .setCustomId('ticket_claim')
-                    .setLabel('Claim')
-                    .setStyle(ButtonStyle.Primary)
-            );
+            .addFields(
+                { name: '📋 Kategorie', value: CATEGORY_NAMES[category], inline: true },
+                { name: '🔢 Ticket-ID', value: `#${ticket.id}`, inline: true }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'HessenRP Ticket-System' });
+
+        // Erstelle Buttons
+        const claimButton = new ButtonBuilder()
+            .setCustomId('ticket_claim')
+            .setLabel('Claim')
+            .setStyle(ButtonStyle.Primary);
+
+        const row = new ActionRowBuilder().addComponents(claimButton);
 
         await ticketChannel.send({
-            components: [ticketSection],
-            flags: MessageFlags.IsComponentsV2
+            embeds: [ticketEmbed],
+            components: [row]
         });
 
         const embed = successEmbed(
@@ -118,50 +122,38 @@ export async function handleTicketClaim(interaction) {
     // Update Channel-Name mit orangenem Kreis
     await interaction.channel.setName(`🟠-${interaction.channel.name}`);
 
-    // Neue Section mit Annehmen/Ablehnen Buttons
-    const claimedSection = new SectionBuilder()
-        .addTextDisplayComponents(
-            (textDisplay) =>
-                textDisplay.setContent(
-                    `**✋ Ticket beansprucht**\n\n` +
-                    `${interaction.user} bearbeitet nun dieses Ticket.\n\n` +
-                    `Nutze die Buttons um das Ticket anzunehmen oder abzulehnen.`
-                )
+    // Erstelle Embed
+    const claimedEmbed = new EmbedBuilder()
+        .setColor('#ff9900')
+        .setTitle('✋ Ticket beansprucht')
+        .setDescription(
+            `${interaction.user} bearbeitet nun dieses Ticket.\n\n` +
+            `Nutze die Buttons um das Ticket anzunehmen oder abzulehnen.`
         )
-        .setButtonAccessory((button) =>
-            button
-                .setCustomId('ticket_accept')
-                .setLabel('Annehmen')
-                .setStyle(ButtonStyle.Success)
-        );
+        .setTimestamp()
+        .setFooter({ text: 'HessenRP Ticket-System' });
 
-    const denySection = new SectionBuilder()
-        .addTextDisplayComponents(
-            (textDisplay) =>
-                textDisplay.setContent(`_ _`) // Minimaler Text für Button-Section
-        )
-        .setButtonAccessory((button) =>
-            button
-                .setCustomId('ticket_deny')
-                .setLabel('Ablehnen')
-                .setStyle(ButtonStyle.Danger)
-        );
+    // Erstelle Buttons
+    const acceptButton = new ButtonBuilder()
+        .setCustomId('ticket_accept')
+        .setLabel('Annehmen')
+        .setStyle(ButtonStyle.Success);
 
-    const closeSection = new SectionBuilder()
-        .addTextDisplayComponents(
-            (textDisplay) =>
-                textDisplay.setContent(`_ _`) // Minimaler Text für Button-Section
-        )
-        .setButtonAccessory((button) =>
-            button
-                .setCustomId('ticket_close')
-                .setLabel('Schließen')
-                .setStyle(ButtonStyle.Secondary)
-        );
+    const denyButton = new ButtonBuilder()
+        .setCustomId('ticket_deny')
+        .setLabel('Ablehnen')
+        .setStyle(ButtonStyle.Danger);
+
+    const closeButton = new ButtonBuilder()
+        .setCustomId('ticket_close')
+        .setLabel('Schließen')
+        .setStyle(ButtonStyle.Secondary);
+
+    const row = new ActionRowBuilder().addComponents(acceptButton, denyButton, closeButton);
 
     await interaction.update({
-        components: [claimedSection, denySection, closeSection],
-        flags: MessageFlags.IsComponentsV2
+        embeds: [claimedEmbed],
+        components: [row]
     });
 }
 
@@ -180,25 +172,25 @@ export async function handleTicketAccept(interaction) {
     const newName = interaction.channel.name.replace(/🟠-/, '✅-');
     await interaction.channel.setName(newName);
 
-    // Section mit Erfolg und Schließen-Button
-    const acceptedSection = new SectionBuilder()
-        .addTextDisplayComponents(
-            (textDisplay) =>
-                textDisplay.setContent(
-                    `**✅ Ticket angenommen**\n\n` +
-                    `Dieses Ticket wurde von ${interaction.user} angenommen.`
-                )
-        )
-        .setButtonAccessory((button) =>
-            button
-                .setCustomId('ticket_close')
-                .setLabel('Schließen')
-                .setStyle(ButtonStyle.Danger)
-        );
+    // Erstelle Embed
+    const acceptedEmbed = new EmbedBuilder()
+        .setColor('#00ff00')
+        .setTitle('✅ Ticket angenommen')
+        .setDescription(`Dieses Ticket wurde von ${interaction.user} angenommen.`)
+        .setTimestamp()
+        .setFooter({ text: 'HessenRP Ticket-System' });
+
+    // Erstelle Schließen-Button
+    const closeButton = new ButtonBuilder()
+        .setCustomId('ticket_close')
+        .setLabel('Schließen')
+        .setStyle(ButtonStyle.Danger);
+
+    const row = new ActionRowBuilder().addComponents(closeButton);
 
     await interaction.update({
-        components: [acceptedSection],
-        flags: MessageFlags.IsComponentsV2
+        embeds: [acceptedEmbed],
+        components: [row]
     });
 }
 
@@ -217,25 +209,25 @@ export async function handleTicketDeny(interaction) {
     const newName = interaction.channel.name.replace(/🟠-/, '❌-');
     await interaction.channel.setName(newName);
 
-    // Section mit Ablehnung und Schließen-Button
-    const deniedSection = new SectionBuilder()
-        .addTextDisplayComponents(
-            (textDisplay) =>
-                textDisplay.setContent(
-                    `**❌ Ticket abgelehnt**\n\n` +
-                    `Dieses Ticket wurde von ${interaction.user} abgelehnt.`
-                )
-        )
-        .setButtonAccessory((button) =>
-            button
-                .setCustomId('ticket_close')
-                .setLabel('Schließen')
-                .setStyle(ButtonStyle.Danger)
-        );
+    // Erstelle Embed
+    const deniedEmbed = new EmbedBuilder()
+        .setColor('#ff0000')
+        .setTitle('❌ Ticket abgelehnt')
+        .setDescription(`Dieses Ticket wurde von ${interaction.user} abgelehnt.`)
+        .setTimestamp()
+        .setFooter({ text: 'HessenRP Ticket-System' });
+
+    // Erstelle Schließen-Button
+    const closeButton = new ButtonBuilder()
+        .setCustomId('ticket_close')
+        .setLabel('Schließen')
+        .setStyle(ButtonStyle.Danger);
+
+    const row = new ActionRowBuilder().addComponents(closeButton);
 
     await interaction.update({
-        components: [deniedSection],
-        flags: MessageFlags.IsComponentsV2
+        embeds: [deniedEmbed],
+        components: [row]
     });
 }
 
@@ -247,19 +239,17 @@ export async function handleTicketClose(interaction) {
         return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    // Section mit Schließen-Nachricht
-    const closingSection = new SectionBuilder()
-        .addTextDisplayComponents(
-            (textDisplay) =>
-                textDisplay.setContent(
-                    `**🔒 Ticket wird geschlossen**\n\n` +
-                    `Dieser Channel wird in **5 Sekunden** gelöscht.`
-                )
-        );
+    // Erstelle Embed
+    const closingEmbed = new EmbedBuilder()
+        .setColor('#808080')
+        .setTitle('🔒 Ticket wird geschlossen')
+        .setDescription('Dieser Channel wird in **5 Sekunden** gelöscht.')
+        .setTimestamp()
+        .setFooter({ text: 'HessenRP Ticket-System' });
 
     await interaction.update({
-        components: [closingSection],
-        flags: MessageFlags.IsComponentsV2
+        embeds: [closingEmbed],
+        components: []
     });
 
     // Lösche Ticket aus Datenbank
