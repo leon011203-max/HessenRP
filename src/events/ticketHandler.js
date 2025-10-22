@@ -20,7 +20,7 @@ export async function handleTicketCreate(interaction) {
             'Setup unvollständig',
             `Die Kategorie **${category}** wurde nicht konfiguriert.\nBitte konfiguriere sie mit:\n\`/ticketsetup category ticketcategory:${category}\``
         );
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Erstelle Ticket-Channel
@@ -29,7 +29,7 @@ export async function handleTicketCreate(interaction) {
 
         if (!ticketCategory) {
             const embed = errorEmbed('Fehler', `Kategorie für **${category}** nicht gefunden.`);
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         const ticketChannel = await interaction.guild.channels.create({
@@ -91,11 +91,11 @@ export async function handleTicketCreate(interaction) {
             `Dein Ticket wurde erstellt: ${ticketChannel}`
         );
 
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     } catch (error) {
         console.error('Fehler beim Erstellen des Tickets:', error);
         const embed = errorEmbed('Fehler', 'Konnte Ticket nicht erstellen.');
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 }
 
@@ -104,12 +104,12 @@ export async function handleTicketClaim(interaction) {
 
     if (!ticket) {
         const embed = errorEmbed('Fehler', 'Ticket nicht gefunden.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     if (ticket.claimed_by) {
         const embed = errorEmbed('Bereits beansprucht', `Dieses Ticket wurde bereits von <@${ticket.claimed_by}> beansprucht.`);
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Update Ticket-Status
@@ -136,6 +136,10 @@ export async function handleTicketClaim(interaction) {
         );
 
     const denySection = new SectionBuilder()
+        .addTextDisplayComponents(
+            (textDisplay) =>
+                textDisplay.setContent(`_ _`) // Minimaler Text für Button-Section
+        )
         .setButtonAccessory((button) =>
             button
                 .setCustomId('ticket_deny')
@@ -144,6 +148,10 @@ export async function handleTicketClaim(interaction) {
         );
 
     const closeSection = new SectionBuilder()
+        .addTextDisplayComponents(
+            (textDisplay) =>
+                textDisplay.setContent(`_ _`) // Minimaler Text für Button-Section
+        )
         .setButtonAccessory((button) =>
             button
                 .setCustomId('ticket_close')
@@ -162,7 +170,7 @@ export async function handleTicketAccept(interaction) {
 
     if (!ticket) {
         const embed = errorEmbed('Fehler', 'Ticket nicht gefunden.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Update Ticket-Status
@@ -199,7 +207,7 @@ export async function handleTicketDeny(interaction) {
 
     if (!ticket) {
         const embed = errorEmbed('Fehler', 'Ticket nicht gefunden.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Update Ticket-Status
@@ -236,7 +244,7 @@ export async function handleTicketClose(interaction) {
 
     if (!ticket) {
         const embed = errorEmbed('Fehler', 'Ticket nicht gefunden.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Section mit Schließen-Nachricht
@@ -249,7 +257,7 @@ export async function handleTicketClose(interaction) {
                 )
         );
 
-    await interaction.reply({
+    await interaction.update({
         components: [closingSection],
         flags: MessageFlags.IsComponentsV2
     });
