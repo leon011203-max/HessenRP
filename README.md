@@ -2,6 +2,8 @@
 
 Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Components v2).
 
+**Datenspeicherung:** Alle Daten werden in JSON-Dateien gespeichert (keine Datenbank erforderlich).
+
 ## Features
 
 ### Team Management
@@ -137,15 +139,15 @@ HessenRP/
 │   │   ├── team/            # Team-Management Befehle
 │   │   └── warnings/        # Warn-Management Befehle
 │   ├── database/
-│   │   ├── init.js          # Datenbank Initialisierung
-│   │   ├── config.js        # Config Management
-│   │   └── warnings.js      # Warn Management
+│   │   ├── init.js          # JSON-Dateien Initialisierung
+│   │   ├── config.js        # Config Management (JSON)
+│   │   └── warnings.js      # Warn Management (JSON)
 │   ├── utils/
 │   │   ├── permissions.js   # Berechtigungsprüfungen
 │   │   └── embeds.js        # Embed-Helpers
 │   ├── index.js             # Hauptdatei
 │   └── deploy-commands.js   # Command Deployment
-├── data/                    # Datenbank-Dateien
+├── data/                    # JSON-Dateien für Daten (config.json, warnings.json, team_warnings.json)
 ├── .env                     # Umgebungsvariablen
 └── package.json
 ```
