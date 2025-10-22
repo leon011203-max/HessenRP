@@ -6,10 +6,14 @@ import { successEmbed, errorEmbed } from '../../utils/embeds.js';
 export default {
     data: new SlashCommandBuilder()
         .setName('teamuprank')
-        .setDescription('Gibt einem Mitglied die konfigurierte Uprank-Rolle')
+        .setDescription('Stuft ein Team-Mitglied hoch')
         .addUserOption(option =>
             option.setName('user')
                 .setDescription('Der User, der hochgestuft werden soll')
+                .setRequired(true))
+        .addRoleOption(option =>
+            option.setName('rolle')
+                .setDescription('Die neue Rolle für den User')
                 .setRequired(true)),
 
     async execute(interaction) {
@@ -18,46 +22,27 @@ export default {
         }
 
         const user = interaction.options.getUser('user');
+        const role = interaction.options.getRole('rolle');
         const member = await interaction.guild.members.fetch(user.id);
-
-        const roleId = getConfig(interaction.guildId, 'team_uprank_role');
-
-        if (!roleId) {
-            const embed = errorEmbed(
-                'Keine Rolle konfiguriert',
-                'Bitte konfiguriere zuerst eine Rolle mit `/setconfig key:team_uprank_role value:<RollenID>`'
-            );
-            return interaction.reply({ embeds: [embed], ephemeral: true });
-        }
-
-        const role = interaction.guild.roles.cache.get(roleId);
-
-        if (!role) {
-            const embed = errorEmbed(
-                'Rolle nicht gefunden',
-                'Die konfigurierte Rolle existiert nicht mehr!'
-            );
-            return interaction.reply({ embeds: [embed], ephemeral: true });
-        }
 
         try {
             await member.roles.add(role);
 
             const embed = successEmbed(
-                'Team-Mitglied hochgestuft',
-                `${user} wurde die Rolle ${role} gegeben.`
+                'Team-Mitglied hochgestuft 🎊',
+                `**User:** ${user}\n**Neue Rolle:** ${role}\n**Hochgestuft von:** ${interaction.user}`
             );
 
-            // Log Channel
-            const logChannelId = getConfig(interaction.guildId, 'team_log_channel');
-            if (logChannelId) {
-                const logChannel = interaction.guild.channels.cache.get(logChannelId);
-                if (logChannel) {
-                    await logChannel.send({ embeds: [embed] });
+            // TeamUpdates Channel
+            const teamUpdatesChannelId = getConfig(interaction.guildId, 'teamupdates_channel');
+            if (teamUpdatesChannelId) {
+                const teamUpdatesChannel = interaction.guild.channels.cache.get(teamUpdatesChannelId);
+                if (teamUpdatesChannel) {
+                    await teamUpdatesChannel.send({ embeds: [embed] });
                 }
             }
 
-            await interaction.reply({ embeds: [embed] });
+            await interaction.reply({ embeds: [embed], ephemeral: true });
         } catch (error) {
             console.error('Fehler beim Hinzufügen der Rolle:', error);
             const embed = errorEmbed(

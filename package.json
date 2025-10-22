@@ -6,15 +6,13 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "deploy": "node src/deploy-commands.js"
+    "dev": "node --watch src/index.js"
   },
   "keywords": ["discord", "bot", "team-management"],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "discord.js": "^14.14.1",
-    "dotenv": "^16.4.1",
-    "better-sqlite3": "^9.4.0"
+    "dotenv": "^16.4.1"
   }
 }

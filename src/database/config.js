@@ -1,47 +1,51 @@
-import db from './init.js';
+import { CONFIG_FILE, readJsonFile, writeJsonFile } from './init.js';
 
 /**
  * Konfigurationswert setzen
  */
 export function setConfig(guildId, key, value) {
-    const stmt = db.prepare(`
-        INSERT INTO config (guild_id, key, value)
-        VALUES (?, ?, ?)
-        ON CONFLICT(guild_id, key) DO UPDATE SET value = ?
-    `);
+    const config = readJsonFile(CONFIG_FILE) || {};
 
-    stmt.run(guildId, key, value, value);
+    if (!config[guildId]) {
+        config[guildId] = {};
+    }
+
+    config[guildId][key] = value;
+    writeJsonFile(CONFIG_FILE, config);
 }
 
 /**
  * Konfigurationswert abrufen
  */
 export function getConfig(guildId, key, defaultValue = null) {
-    const stmt = db.prepare('SELECT value FROM config WHERE guild_id = ? AND key = ?');
-    const result = stmt.get(guildId, key);
+    const config = readJsonFile(CONFIG_FILE) || {};
 
-    return result ? result.value : defaultValue;
+    if (config[guildId] && config[guildId][key]) {
+        return config[guildId][key];
+    }
+
+    return defaultValue;
 }
 
 /**
  * Alle Konfigurationswerte eines Servers abrufen
  */
 export function getAllConfig(guildId) {
-    const stmt = db.prepare('SELECT key, value FROM config WHERE guild_id = ?');
-    const results = stmt.all(guildId);
-
-    const config = {};
-    for (const row of results) {
-        config[row.key] = row.value;
-    }
-
-    return config;
+    const config = readJsonFile(CONFIG_FILE) || {};
+    return config[guildId] || {};
 }
 
 /**
  * Konfigurationswert löschen
  */
 export function deleteConfig(guildId, key) {
-    const stmt = db.prepare('DELETE FROM config WHERE guild_id = ? AND key = ?');
-    stmt.run(guildId, key);
+    const config = readJsonFile(CONFIG_FILE) || {};
+
+    if (config[guildId] && config[guildId][key]) {
+        delete config[guildId][key];
+        writeJsonFile(CONFIG_FILE, config);
+        return true;
+    }
+
+    return false;
 }

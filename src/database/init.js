@@ -1,52 +1,69 @@
-import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const db = new Database(join(__dirname, '../../data/bot.db'));
+const DATA_DIR = join(__dirname, '../../data');
+const CONFIG_FILE = join(DATA_DIR, 'config.json');
+const WARNINGS_FILE = join(DATA_DIR, 'warnings.json');
+const TEAM_WARNINGS_FILE = join(DATA_DIR, 'team_warnings.json');
 
+/**
+ * Initialisiert das Datei-basierte Speichersystem
+ */
 export function initDatabase() {
-    // Config Tabelle
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS config (
-            guild_id TEXT NOT NULL,
-            key TEXT NOT NULL,
-            value TEXT NOT NULL,
-            PRIMARY KEY (guild_id, key)
-        )
-    `);
+    // Data Verzeichnis erstellen falls nicht vorhanden
+    if (!existsSync(DATA_DIR)) {
+        mkdirSync(DATA_DIR, { recursive: true });
+    }
 
-    // Warnungen Tabelle
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS warnings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id TEXT NOT NULL,
-            user_id TEXT NOT NULL,
-            warned_by TEXT NOT NULL,
-            reason TEXT,
-            timestamp INTEGER NOT NULL
-        )
-    `);
+    // Config-Datei initialisieren
+    if (!existsSync(CONFIG_FILE)) {
+        writeFileSync(CONFIG_FILE, JSON.stringify({}, null, 2));
+        console.log('✅ config.json erstellt');
+    }
 
-    // Team Warnungen Tabelle
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS team_warnings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            guild_id TEXT NOT NULL,
-            team_role_id TEXT NOT NULL,
-            warned_by TEXT NOT NULL,
-            reason TEXT,
-            timestamp INTEGER NOT NULL
-        )
-    `);
+    // Warnings-Datei initialisieren
+    if (!existsSync(WARNINGS_FILE)) {
+        writeFileSync(WARNINGS_FILE, JSON.stringify([], null, 2));
+        console.log('✅ warnings.json erstellt');
+    }
 
-    console.log('✅ Datenbanktabellen erstellt/überprüft');
+    // Team Warnings-Datei initialisieren
+    if (!existsSync(TEAM_WARNINGS_FILE)) {
+        writeFileSync(TEAM_WARNINGS_FILE, JSON.stringify([], null, 2));
+        console.log('✅ team_warnings.json erstellt');
+    }
+
+    console.log('✅ Datei-basiertes Speichersystem initialisiert');
 }
 
-export function getDatabase() {
-    return db;
+/**
+ * Liest Daten aus einer JSON-Datei
+ */
+export function readJsonFile(filePath) {
+    try {
+        const data = readFileSync(filePath, 'utf-8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error(`Fehler beim Lesen von ${filePath}:`, error);
+        return null;
+    }
 }
 
-export default db;
+/**
+ * Schreibt Daten in eine JSON-Datei
+ */
+export function writeJsonFile(filePath, data) {
+    try {
+        writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+        return true;
+    } catch (error) {
+        console.error(`Fehler beim Schreiben von ${filePath}:`, error);
+        return false;
+    }
+}
+
+export { CONFIG_FILE, WARNINGS_FILE, TEAM_WARNINGS_FILE };

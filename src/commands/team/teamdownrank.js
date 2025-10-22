@@ -5,15 +5,15 @@ import { successEmbed, errorEmbed } from '../../utils/embeds.js';
 
 export default {
     data: new SlashCommandBuilder()
-        .setName('teamnew')
-        .setDescription('Fügt ein neues Team-Mitglied hinzu')
+        .setName('teamdownrank')
+        .setDescription('Entfernt eine Rolle von einem Team-Mitglied')
         .addUserOption(option =>
             option.setName('user')
-                .setDescription('Der User, der die Rolle bekommen soll')
+                .setDescription('Der User, der downgerankt werden soll')
                 .setRequired(true))
         .addRoleOption(option =>
             option.setName('rolle')
-                .setDescription('Die Rolle, die der User bekommen soll')
+                .setDescription('Die Rolle, die entfernt werden soll')
                 .setRequired(true)),
 
     async execute(interaction) {
@@ -25,26 +25,21 @@ export default {
         const role = interaction.options.getRole('rolle');
         const member = await interaction.guild.members.fetch(user.id);
 
-        try {
-            await member.roles.add(role);
-
-            // Willkommensnachricht
-            const welcomeEmbed = successEmbed(
-                'Willkommen im Team! 🎉',
-                `Herzlich willkommen ${user}!\n\nDu wurdest dem Team hinzugefügt und hast die Rolle ${role} erhalten.\n\nViel Erfolg! 💪`
+        // Prüfen ob User die Rolle hat
+        if (!member.roles.cache.has(role.id)) {
+            const embed = errorEmbed(
+                'Rolle nicht vorhanden',
+                `${user} hat die Rolle ${role} nicht.`
             );
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
 
-            // Versuche dem User eine DM zu senden
-            try {
-                await user.send({ embeds: [welcomeEmbed] });
-            } catch (dmError) {
-                console.log(`Konnte keine DM an ${user.tag} senden:`, dmError.message);
-            }
+        try {
+            await member.roles.remove(role);
 
-            // TeamUpdates Embed
-            const updateEmbed = successEmbed(
-                'Neues Team-Mitglied 🎉',
-                `**User:** ${user}\n**Rolle:** ${role}\n**Hinzugefügt von:** ${interaction.user}`
+            const embed = successEmbed(
+                'Team-Mitglied downgerankt 📉',
+                `**User:** ${user}\n**Entfernte Rolle:** ${role}\n**Downgerankt von:** ${interaction.user}`
             );
 
             // TeamUpdates Channel
@@ -52,16 +47,16 @@ export default {
             if (teamUpdatesChannelId) {
                 const teamUpdatesChannel = interaction.guild.channels.cache.get(teamUpdatesChannelId);
                 if (teamUpdatesChannel) {
-                    await teamUpdatesChannel.send({ embeds: [updateEmbed] });
+                    await teamUpdatesChannel.send({ embeds: [embed] });
                 }
             }
 
-            await interaction.reply({ embeds: [updateEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [embed], ephemeral: true });
         } catch (error) {
-            console.error('Fehler beim Hinzufügen der Rolle:', error);
+            console.error('Fehler beim Entfernen der Rolle:', error);
             const embed = errorEmbed(
                 'Fehler',
-                'Konnte die Rolle nicht hinzufügen. Stelle sicher, dass der Bot die nötigen Berechtigungen hat.'
+                'Konnte die Rolle nicht entfernen. Stelle sicher, dass der Bot die nötigen Berechtigungen hat.'
             );
             await interaction.reply({ embeds: [embed], ephemeral: true });
         }

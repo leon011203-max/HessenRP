@@ -1,9 +1,14 @@
-import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, REST, Routes } from 'discord.js';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
 import { initDatabase } from './database/init.js';
+import { getConfig } from './database/config.js';
+import { successEmbed } from './utils/embeds.js';
+import { cleanupOldWarnings } from './database/warnings.js';
+import { initTicketFiles } from './database/tickets.js';
+import { handleTicketCreate, handleTicketClaim, handleTicketAccept, handleTicketDeny, handleTicketClose } from './events/ticketHandler.js';
 
 config();
 
@@ -23,7 +28,9 @@ const client = new Client({
 client.commands = new Collection();
 
 // Commands laden
+console.log('📝 Lade Commands...');
 const commandFolders = readdirSync(join(__dirname, 'commands'));
+const commandsData = [];
 
 for (const folder of commandFolders) {
     const commandFiles = readdirSync(join(__dirname, 'commands', folder)).filter(
@@ -36,45 +43,134 @@ for (const folder of commandFolders) {
 
         if ('data' in command.default && 'execute' in command.default) {
             client.commands.set(command.default.data.name, command.default);
-            console.log(`✅ Command geladen: ${command.default.data.name}`);
+            commandsData.push(command.default.data.toJSON());
+            console.log(`✅ ${command.default.data.name}`);
         }
     }
 }
 
+// Commands automatisch deployen
+console.log(`\n🚀 Deploye ${commandsData.length} Commands...`);
+const rest = new REST().setToken(process.env.DISCORD_TOKEN);
+
+try {
+    const data = await rest.put(
+        Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+        { body: commandsData }
+    );
+    console.log(`✅ ${data.length} Commands erfolgreich deployed!`);
+} catch (error) {
+    console.error('❌ Fehler beim Deployen der Commands:', error);
+}
+
+// Datenbank initialisieren
+initDatabase();
+
+// Alte Warnungen bereinigen
+cleanupOldWarnings();
+
+// Ticket-System initialisieren
+initTicketFiles();
+
 // Event Handler
 client.once('ready', () => {
-    console.log(`🤖 Bot ist online als ${client.user.tag}`);
-    initDatabase();
-    console.log('📊 Datenbank initialisiert');
+    console.log(`\n🤖 Bot ist online als ${client.user.tag}`);
+
+    // Täglich alte Warnungen bereinigen (alle 24 Stunden)
+    setInterval(() => {
+        cleanupOldWarnings();
+    }, 24 * 60 * 60 * 1000);
 });
 
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
+    // Slash Commands
+    if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
 
-    const command = client.commands.get(interaction.commandName);
+        if (!command) {
+            console.error(`Kein Command gefunden: ${interaction.commandName}`);
+            return;
+        }
 
-    if (!command) {
-        console.error(`Kein Command gefunden: ${interaction.commandName}`);
-        return;
+        try {
+            await command.execute(interaction);
+        } catch (error) {
+            console.error('Fehler beim Ausführen des Commands:', error);
+
+            const errorMessage = {
+                content: '❌ Es gab einen Fehler beim Ausführen dieses Commands!',
+                ephemeral: true
+            };
+
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp(errorMessage);
+            } else {
+                await interaction.reply(errorMessage);
+            }
+        }
     }
 
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error('Fehler beim Ausführen des Commands:', error);
+    // Select Menu für Ticket-Erstellung
+    if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_create') {
+        try {
+            await handleTicketCreate(interaction);
+        } catch (error) {
+            console.error('Fehler beim Erstellen des Tickets:', error);
+        }
+    }
 
-        const errorMessage = {
-            content: '❌ Es gab einen Fehler beim Ausführen dieses Commands!',
-            ephemeral: true
-        };
-
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp(errorMessage);
-        } else {
-            await interaction.reply(errorMessage);
+    // Ticket Buttons
+    if (interaction.isButton()) {
+        try {
+            switch (interaction.customId) {
+                case 'ticket_claim':
+                    await handleTicketClaim(interaction);
+                    break;
+                case 'ticket_accept':
+                    await handleTicketAccept(interaction);
+                    break;
+                case 'ticket_deny':
+                    await handleTicketDeny(interaction);
+                    break;
+                case 'ticket_close':
+                    await handleTicketClose(interaction);
+                    break;
+            }
+        } catch (error) {
+            console.error('Fehler beim Bearbeiten des Buttons:', error);
         }
     }
 });
 
+// Willkommens-Event für neue Mitglieder
+client.on('guildMemberAdd', async member => {
+    try {
+        const welcomeChannelId = getConfig(member.guild.id, 'welcome_channel');
+
+        if (!welcomeChannelId) {
+            console.log('Kein Welcome Channel konfiguriert');
+            return;
+        }
+
+        const welcomeChannel = member.guild.channels.cache.get(welcomeChannelId);
+
+        if (!welcomeChannel) {
+            console.log('Welcome Channel nicht gefunden');
+            return;
+        }
+
+        const embed = successEmbed(
+            'Willkommen auf dem Server! 🎉',
+            `Herzlich willkommen ${member}!\n\nSchön, dass du da bist! Wir wünschen dir viel Spaß auf unserem Server.\n\nViel Erfolg und eine tolle Zeit! 🚀`
+        );
+
+        await welcomeChannel.send({ embeds: [embed] });
+        console.log(`Willkommensnachricht für ${member.user.tag} gesendet`);
+    } catch (error) {
+        console.error('Fehler beim Senden der Willkommensnachricht:', error);
+    }
+});
+
 // Bot starten
+console.log('\n🔌 Verbinde mit Discord...');
 client.login(process.env.DISCORD_TOKEN);
