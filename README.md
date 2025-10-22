@@ -9,6 +9,7 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 ### Team Management
 - `/teamnew` - Fügt ein neues Team-Mitglied hinzu (User + Rolle wählen, sendet Willkommensnachricht)
 - `/teamuprank` - Stuft ein Team-Mitglied hoch (User + neue Rolle wählen)
+- `/teamdownrank` - Entfernt eine Rolle von einem Team-Mitglied
 - `/teamkick` - Kickt ein Team-Mitglied vom Server
 - `/teamwarn` - Warnt einen Team-Member
 
@@ -20,6 +21,16 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 ### Welcome System
 - Automatische Willkommensnachricht wenn ein User dem Server beitritt
 - Konfigurierbar über Welcome Channel
+
+### Ticket-System (RP-optimiert)
+- **Dropdown-Menu** mit 6 Kategorien: Support, Analyse, Donator, Fraktions-Antrag, High Team, Sonstiges
+- **Berechtigungssystem:** Pro Kategorie konfigurierbare Rollen
+- **Claim-System:** Teamler können Tickets claimen
+- **Status-Anzeige:** Automatische Umbenennung mit Emojis:
+  - 🟠 Bei Bearbeitung (geclaimed)
+  - ✅ Bei Annahme
+  - ❌ Bei Ablehnung
+- **Buttons:** Claim, Annehmen, Ablehnen, Schließen
 
 ### Configuration
 - `/setconfig` - Setzt Bot-Konfigurationen (nur für Admins)
@@ -102,6 +113,26 @@ Hier werden Willkommensnachrichten für neue Server-Mitglieder gepostet:
 /showconfig
 ```
 
+#### Ticket-System einrichten
+```
+# 1. Panel-Channel setzen (wo das Ticket-Dropdown angezeigt wird)
+/ticketsetup panel channel:#tickets
+
+# 2. Ticket-Kategorie setzen (wo neue Ticket-Channels erstellt werden)
+/ticketsetup category category:Tickets
+
+# 3. Berechtigungen pro Kategorie setzen
+/ticketsetup permissions ticketcategory:support rolle:@Support
+/ticketsetup permissions ticketcategory:analyse rolle:@Analyse-Team
+/ticketsetup permissions ticketcategory:donator rolle:@Donator-Support
+/ticketsetup permissions ticketcategory:fraktion rolle:@Fraktions-Leitung
+/ticketsetup permissions ticketcategory:highteam rolle:@High-Team
+/ticketsetup permissions ticketcategory:sonstiges rolle:@Team
+
+# 4. Ticket-Panel erstellen
+/ticketpanel
+```
+
 ## Verwendung
 
 ### Team-Mitglied hinzufügen
@@ -115,6 +146,12 @@ Fügt ein neues Mitglied zum Team hinzu. Der User erhält die ausgewählte Rolle
 /teamuprank user:@Username rolle:@NeueRolle
 ```
 Stuft ein Team-Mitglied hoch und gibt ihm eine neue Rolle.
+
+### Team-Mitglied downranken
+```
+/teamdownrank user:@Username rolle:@Rolle
+```
+Entfernt eine Rolle von einem Team-Mitglied.
 
 ### Team-Mitglied kicken
 ```
@@ -134,6 +171,24 @@ Warnt einen Team-Member. Die Warnung wird gespeichert und im TeamUpdates Channel
 /showwarns type:team target:<RollenID>
 /deletewarn type:user warn_id:1
 ```
+
+### Ticket-System nutzen
+
+**Als User:**
+1. Gehe zum Ticket-Channel mit dem Panel
+2. Wähle eine Kategorie aus dem Dropdown-Menu
+3. Ein privater Ticket-Channel wird erstellt
+4. Beschreibe dein Anliegen
+
+**Als Teamler:**
+1. **Claimen:** Klicke auf "Claim" um das Ticket zu übernehmen
+   - Channel wird umbenannt: `🟠-ticket-kategorie-username`
+2. **Annehmen:** Klicke auf "Annehmen" wenn das Anliegen bearbeitet wird
+   - Channel wird umbenannt: `✅-ticket-kategorie-username`
+3. **Ablehnen:** Klicke auf "Ablehnen" wenn das Anliegen abgelehnt wird
+   - Channel wird umbenannt: `❌-ticket-kategorie-username`
+4. **Schließen:** Klicke auf "Schließen" um das Ticket zu schließen
+   - Channel wird nach 5 Sekunden gelöscht
 
 ## Projektstruktur
 

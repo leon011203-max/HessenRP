@@ -7,6 +7,8 @@ import { initDatabase } from './database/init.js';
 import { getConfig } from './database/config.js';
 import { successEmbed } from './utils/embeds.js';
 import { cleanupOldWarnings } from './database/warnings.js';
+import { initTicketFiles } from './database/tickets.js';
+import { handleTicketCreate, handleTicketClaim, handleTicketAccept, handleTicketDeny, handleTicketClose } from './events/ticketHandler.js';
 
 config();
 
@@ -67,6 +69,9 @@ initDatabase();
 // Alte Warnungen bereinigen
 cleanupOldWarnings();
 
+// Ticket-System initialisieren
+initTicketFiles();
+
 // Event Handler
 client.once('ready', () => {
     console.log(`\n🤖 Bot ist online als ${client.user.tag}`);
@@ -78,29 +83,61 @@ client.once('ready', () => {
 });
 
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
+    // Slash Commands
+    if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
 
-    const command = client.commands.get(interaction.commandName);
+        if (!command) {
+            console.error(`Kein Command gefunden: ${interaction.commandName}`);
+            return;
+        }
 
-    if (!command) {
-        console.error(`Kein Command gefunden: ${interaction.commandName}`);
-        return;
+        try {
+            await command.execute(interaction);
+        } catch (error) {
+            console.error('Fehler beim Ausführen des Commands:', error);
+
+            const errorMessage = {
+                content: '❌ Es gab einen Fehler beim Ausführen dieses Commands!',
+                ephemeral: true
+            };
+
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp(errorMessage);
+            } else {
+                await interaction.reply(errorMessage);
+            }
+        }
     }
 
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error('Fehler beim Ausführen des Commands:', error);
+    // Select Menu für Ticket-Erstellung
+    if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_create') {
+        try {
+            await handleTicketCreate(interaction);
+        } catch (error) {
+            console.error('Fehler beim Erstellen des Tickets:', error);
+        }
+    }
 
-        const errorMessage = {
-            content: '❌ Es gab einen Fehler beim Ausführen dieses Commands!',
-            ephemeral: true
-        };
-
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp(errorMessage);
-        } else {
-            await interaction.reply(errorMessage);
+    // Ticket Buttons
+    if (interaction.isButton()) {
+        try {
+            switch (interaction.customId) {
+                case 'ticket_claim':
+                    await handleTicketClaim(interaction);
+                    break;
+                case 'ticket_accept':
+                    await handleTicketAccept(interaction);
+                    break;
+                case 'ticket_deny':
+                    await handleTicketDeny(interaction);
+                    break;
+                case 'ticket_close':
+                    await handleTicketClose(interaction);
+                    break;
+            }
+        } catch (error) {
+            console.error('Fehler beim Bearbeiten des Buttons:', error);
         }
     }
 });
