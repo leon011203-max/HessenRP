@@ -6,6 +6,7 @@ import { readdirSync } from 'fs';
 import { initDatabase } from './database/init.js';
 import { getConfig } from './database/config.js';
 import { successEmbed } from './utils/embeds.js';
+import { cleanupOldWarnings } from './database/warnings.js';
 
 config();
 
@@ -63,9 +64,17 @@ try {
 // Datenbank initialisieren
 initDatabase();
 
+// Alte Warnungen bereinigen
+cleanupOldWarnings();
+
 // Event Handler
 client.once('ready', () => {
     console.log(`\n🤖 Bot ist online als ${client.user.tag}`);
+
+    // Täglich alte Warnungen bereinigen (alle 24 Stunden)
+    setInterval(() => {
+        cleanupOldWarnings();
+    }, 24 * 60 * 60 * 1000);
 });
 
 client.on('interactionCreate', async interaction => {

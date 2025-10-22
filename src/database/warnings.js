@@ -1,5 +1,46 @@
 import { WARNINGS_FILE, TEAM_WARNINGS_FILE, readJsonFile, writeJsonFile } from './init.js';
 
+// 2 Wochen in Millisekunden
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+/**
+ * Löscht alle Warnungen, die älter als 2 Wochen sind
+ */
+export function cleanupOldWarnings() {
+    const now = Date.now();
+    let deletedCount = 0;
+
+    // User Warnungen bereinigen
+    const warnings = readJsonFile(WARNINGS_FILE) || [];
+    const validWarnings = warnings.filter(w => {
+        const age = now - w.timestamp;
+        return age < TWO_WEEKS_MS;
+    });
+
+    if (validWarnings.length < warnings.length) {
+        deletedCount += warnings.length - validWarnings.length;
+        writeJsonFile(WARNINGS_FILE, validWarnings);
+    }
+
+    // Team Warnungen bereinigen
+    const teamWarnings = readJsonFile(TEAM_WARNINGS_FILE) || [];
+    const validTeamWarnings = teamWarnings.filter(w => {
+        const age = now - w.timestamp;
+        return age < TWO_WEEKS_MS;
+    });
+
+    if (validTeamWarnings.length < teamWarnings.length) {
+        deletedCount += teamWarnings.length - validTeamWarnings.length;
+        writeJsonFile(TEAM_WARNINGS_FILE, validTeamWarnings);
+    }
+
+    if (deletedCount > 0) {
+        console.log(`🧹 ${deletedCount} alte Warnungen (älter als 2 Wochen) gelöscht`);
+    }
+
+    return deletedCount;
+}
+
 /**
  * Warnung für einen User hinzufügen
  */
@@ -73,22 +114,36 @@ export function deleteTeamWarning(warnId) {
 }
 
 /**
- * Alle Warnungen eines Users abrufen
+ * Alle Warnungen eines Users abrufen (nur aktive, nicht älter als 2 Wochen)
  */
 export function getUserWarnings(guildId, userId) {
+    cleanupOldWarnings(); // Automatisch alte Warnungen bereinigen
+
     const warnings = readJsonFile(WARNINGS_FILE) || [];
+    const now = Date.now();
+
     return warnings
-        .filter(w => w.guild_id === guildId && w.user_id === userId)
+        .filter(w => {
+            const age = now - w.timestamp;
+            return w.guild_id === guildId && w.user_id === userId && age < TWO_WEEKS_MS;
+        })
         .sort((a, b) => b.timestamp - a.timestamp);
 }
 
 /**
- * Alle Warnungen eines Teams abrufen
+ * Alle Warnungen eines Teams abrufen (nur aktive, nicht älter als 2 Wochen)
  */
 export function getTeamWarnings(guildId, teamRoleId) {
+    cleanupOldWarnings(); // Automatisch alte Warnungen bereinigen
+
     const teamWarnings = readJsonFile(TEAM_WARNINGS_FILE) || [];
+    const now = Date.now();
+
     return teamWarnings
-        .filter(w => w.guild_id === guildId && w.team_role_id === teamRoleId)
+        .filter(w => {
+            const age = now - w.timestamp;
+            return w.guild_id === guildId && w.team_role_id === teamRoleId && age < TWO_WEEKS_MS;
+        })
         .sort((a, b) => b.timestamp - a.timestamp);
 }
 

@@ -52,6 +52,6 @@ export default {
             `Warnung #${warnId} wurde erfolgreich gelöscht.`
         );
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed], ephemeral: true });
     }
 };

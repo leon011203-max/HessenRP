@@ -15,6 +15,7 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 ### Warn Management
 - `/deletewarn` - Löscht eine Warnung
 - `/showwarns` - Zeigt alle Warnungen eines Users oder Teams an
+- **Automatisches Ablaufen:** Warnungen werden nach 2 Wochen automatisch gelöscht
 
 ### Welcome System
 - Automatische Willkommensnachricht wenn ein User dem Server beitritt
@@ -23,6 +24,10 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 ### Configuration
 - `/setconfig` - Setzt Bot-Konfigurationen (nur für Admins)
 - `/showconfig` - Zeigt alle Bot-Konfigurationen an
+
+### Besonderheiten
+- **Ephemeral Commands:** Alle Command-Antworten sind nur für dich sichtbar (temporäre Nachrichten)
+- **Öffentliche Logs:** Team-Events werden im TeamUpdates Channel für alle sichtbar gepostet
 
 ## Installation
 

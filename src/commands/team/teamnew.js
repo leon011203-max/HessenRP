@@ -56,7 +56,7 @@ export default {
                 }
             }
 
-            await interaction.reply({ embeds: [updateEmbed] });
+            await interaction.reply({ embeds: [updateEmbed], ephemeral: true });
         } catch (error) {
             console.error('Fehler beim Hinzufügen der Rolle:', error);
             const embed = errorEmbed(

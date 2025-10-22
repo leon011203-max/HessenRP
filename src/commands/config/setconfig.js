@@ -35,6 +35,6 @@ export default {
             `**${key}** wurde auf \`${value}\` gesetzt.`
         );
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed], ephemeral: true });
     }
 };
