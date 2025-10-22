@@ -53,15 +53,12 @@ Verwende diese URL (ersetze CLIENT_ID mit deiner Client ID):
 https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=8&scope=bot%20applications.commands
 ```
 
-### 5. Commands deployen
-```bash
-npm run deploy
-```
-
-### 6. Bot starten
+### 5. Bot starten
 ```bash
 npm start
 ```
+
+**Hinweis:** Die Commands werden automatisch beim Start deployed!
 
 Für Entwicklung mit Auto-Reload:
 ```bash

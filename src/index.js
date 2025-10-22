@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, REST, Routes } from 'discord.js';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -23,7 +23,9 @@ const client = new Client({
 client.commands = new Collection();
 
 // Commands laden
+console.log('📝 Lade Commands...');
 const commandFolders = readdirSync(join(__dirname, 'commands'));
+const commandsData = [];
 
 for (const folder of commandFolders) {
     const commandFiles = readdirSync(join(__dirname, 'commands', folder)).filter(
@@ -36,16 +38,32 @@ for (const folder of commandFolders) {
 
         if ('data' in command.default && 'execute' in command.default) {
             client.commands.set(command.default.data.name, command.default);
-            console.log(`✅ Command geladen: ${command.default.data.name}`);
+            commandsData.push(command.default.data.toJSON());
+            console.log(`✅ ${command.default.data.name}`);
         }
     }
 }
 
+// Commands automatisch deployen
+console.log(`\n🚀 Deploye ${commandsData.length} Commands...`);
+const rest = new REST().setToken(process.env.DISCORD_TOKEN);
+
+try {
+    const data = await rest.put(
+        Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+        { body: commandsData }
+    );
+    console.log(`✅ ${data.length} Commands erfolgreich deployed!`);
+} catch (error) {
+    console.error('❌ Fehler beim Deployen der Commands:', error);
+}
+
+// Datenbank initialisieren
+initDatabase();
+
 // Event Handler
 client.once('ready', () => {
-    console.log(`🤖 Bot ist online als ${client.user.tag}`);
-    initDatabase();
-    console.log('📊 Datenbank initialisiert');
+    console.log(`\n🤖 Bot ist online als ${client.user.tag}`);
 });
 
 client.on('interactionCreate', async interaction => {
@@ -77,4 +95,5 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Bot starten
+console.log('\n🔌 Verbinde mit Discord...');
 client.login(process.env.DISCORD_TOKEN);
