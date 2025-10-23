@@ -50,6 +50,12 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 ### Utility
 - `/embed` - Erstellt ein benutzerdefiniertes Embed mit Titel, Nachricht, Farbe und optionalen Bildern
 - **Berechtigung:** Nur für User mit der spezifischen Embed-Rolle
+- `/verifypanel` - Erstellt ein Verify-Panel mit Button zur Verifizierung
+
+### Verify-System
+- **Automatische Rollen-Vergabe:** User klicken auf den Verify-Button und erhalten automatisch die konfigurierte Rolle
+- **Konfigurierbar:** Verify-Rolle wird in der `.env` Datei eingestellt (`VERIFY_ROLE_ID`)
+- **Schutz:** User können sich nur einmal verifizieren
 
 ### Besonderheiten
 - **Ephemeral Commands:** Alle Command-Antworten sind nur für dich sichtbar (temporäre Nachrichten)
@@ -74,6 +80,7 @@ Erforderliche Werte:
 - `CLIENT_ID` - Die Client ID deines Bots
 - `GUILD_ID` - Die ID deines Discord Servers
 - `ADMIN_IDS` - Kommagetrennte Liste von User IDs, die Admin-Rechte haben
+- `VERIFY_ROLE_ID` - Die Rollen-ID die User nach der Verifizierung erhalten (optional, nur für Verify-System)
 
 ### 3. Bot Token erstellen
 1. Gehe zu https://discord.com/developers/applications
@@ -280,6 +287,34 @@ Mit dem `/embed` Command kannst du schöne Embeds erstellen:
 
 **Hinweis:** Nur User mit der Embed-Rolle (ID: `1430289484993269770`) können diesen Command nutzen.
 
+### Verify-System nutzen
+
+**Setup:**
+1. Setze die `VERIFY_ROLE_ID` in deiner `.env` Datei:
+```env
+VERIFY_ROLE_ID=1234567890123456789
+```
+
+2. Erstelle das Verify-Panel:
+```
+/verifypanel channel:#verify
+```
+Oder ohne Channel-Angabe im aktuellen Channel:
+```
+/verifypanel
+```
+
+**Für User:**
+1. Gehe zum Verify-Channel
+2. Klicke auf den grünen "✅ Verifizieren" Button
+3. Du erhältst automatisch die konfigurierte Rolle
+4. Du hast nun Zugriff auf alle Channels
+
+**Features:**
+- User können sich nur einmal verifizieren (Doppel-Verifizierung wird verhindert)
+- Schönes grünes Embed mit Bestätigung
+- Zeigt welche Rolle vergeben wird
+
 ## Projektstruktur
 
 ```
@@ -299,7 +334,8 @@ HessenRP/
 │   │   ├── tickets.js       # Ticket Management (JSON)
 │   │   └── fraktionen.js    # Fraktions-Warn Management (JSON)
 │   ├── events/
-│   │   └── ticketHandler.js # Ticket Interaction Handler
+│   │   ├── ticketHandler.js # Ticket Interaction Handler
+│   │   └── verifyHandler.js # Verify Button Handler
 │   ├── utils/
 │   │   ├── permissions.js   # Berechtigungsprüfungen
 │   │   └── embeds.js        # Embed-Helpers

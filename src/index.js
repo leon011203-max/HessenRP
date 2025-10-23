@@ -10,6 +10,7 @@ import { cleanupOldWarnings } from './database/warnings.js';
 import { initTicketFiles } from './database/tickets.js';
 import { initFrakWarnsFile, cleanupOldFrakWarns } from './database/fraktionen.js';
 import { handleTicketCreate, handleTicketClaim, handleTicketAccept, handleTicketDeny, handleTicketClose } from './events/ticketHandler.js';
+import { handleVerify } from './events/verifyHandler.js';
 
 config();
 
@@ -127,7 +128,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // Ticket Buttons
+    // Ticket Buttons & Verify Button
     if (interaction.isButton()) {
         try {
             switch (interaction.customId) {
@@ -142,6 +143,9 @@ client.on('interactionCreate', async interaction => {
                     break;
                 case 'ticket_close':
                     await handleTicketClose(interaction);
+                    break;
+                case 'verify_user':
+                    await handleVerify(interaction);
                     break;
             }
         } catch (error) {
