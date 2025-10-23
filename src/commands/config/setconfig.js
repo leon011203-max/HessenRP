@@ -13,7 +13,9 @@ export default {
                 .setRequired(true)
                 .addChoices(
                     { name: 'TeamUpdates Channel', value: 'teamupdates_channel' },
-                    { name: 'Welcome Channel', value: 'welcome_channel' }
+                    { name: 'Welcome Channel', value: 'welcome_channel' },
+                    { name: 'Leave Channel', value: 'leave_channel' },
+                    { name: 'Fraktionen Channel', value: 'fraktionen_channel' }
                 ))
         .addStringOption(option =>
             option.setName('value')
