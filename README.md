@@ -18,13 +18,14 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 - `/showwarns` - Zeigt alle Warnungen eines Users oder Teams an
 - **Automatisches Ablaufen:** Warnungen werden nach 2 Wochen automatisch gelöscht
 
-### Welcome System
-- Automatische Willkommensnachricht wenn ein User dem Server beitritt
-- Konfigurierbar über Welcome Channel
+### Welcome & Leave System
+- **Welcome:** Automatische Willkommensnachricht wenn ein User dem Server beitritt
+- **Leave:** Automatische Verabschiedungs-Nachricht wenn ein User den Server verlässt
+- Beide Systeme sind über separate Channels konfigurierbar
 
-### Ticket-System (RP-optimiert, Components v2)
+### Ticket-System (RP-optimiert)
 - **Dropdown-Menu** mit 6 Kategorien: Support, Analyse, Donator, Fraktions-Antrag, High Team, Sonstiges
-- **Components v2:** Buttons sind direkt in den Nachrichten integriert (SectionBuilder)
+- **Schöne Embeds:** Alle Ticket-Nachrichten sind farbcodierte Embeds
 - **Individuelle Kategorien:** Jede Ticket-Kategorie kann eine eigene Discord-Kategorie haben
 - **Berechtigungssystem:** Unbegrenzt viele Rollen pro Kategorie konfigurierbar
 - **Claim-System:** Teamler können Tickets claimen
@@ -108,6 +109,12 @@ Hier werden alle Team-Events gepostet (neue Mitglieder, Upranks, Kicks, Warnunge
 Hier werden Willkommensnachrichten für neue Server-Mitglieder gepostet:
 ```
 /setconfig key:welcome_channel value:<ChannelID>
+```
+
+#### Leave Channel konfigurieren
+Hier werden Verabschiedungs-Nachrichten gepostet wenn Mitglieder den Server verlassen:
+```
+/setconfig key:leave_channel value:<ChannelID>
 ```
 
 #### Konfiguration anzeigen

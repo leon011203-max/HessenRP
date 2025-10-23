@@ -171,6 +171,42 @@ client.on('guildMemberAdd', async member => {
     }
 });
 
+// Leave-Event für User die den Server verlassen
+client.on('guildMemberRemove', async member => {
+    try {
+        const leaveChannelId = getConfig(member.guild.id, 'leave_channel');
+
+        if (!leaveChannelId) {
+            console.log('Kein Leave Channel konfiguriert');
+            return;
+        }
+
+        const leaveChannel = member.guild.channels.cache.get(leaveChannelId);
+
+        if (!leaveChannel) {
+            console.log('Leave Channel nicht gefunden');
+            return;
+        }
+
+        const { EmbedBuilder } = await import('discord.js');
+        const leaveEmbed = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle('Auf Wiedersehen! 👋')
+            .setDescription(
+                `**${member.user.tag}** hat den Server verlassen.\n\n` +
+                `Wir wünschen dir alles Gute für die Zukunft!`
+            )
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .setTimestamp()
+            .setFooter({ text: `Mitglied seit ${member.joinedAt ? member.joinedAt.toLocaleDateString('de-DE') : 'Unbekannt'}` });
+
+        await leaveChannel.send({ embeds: [leaveEmbed] });
+        console.log(`Leave-Nachricht für ${member.user.tag} gesendet`);
+    } catch (error) {
+        console.error('Fehler beim Senden der Leave-Nachricht:', error);
+    }
+});
+
 // Bot starten
 console.log('\n🔌 Verbinde mit Discord...');
 client.login(process.env.DISCORD_TOKEN);
