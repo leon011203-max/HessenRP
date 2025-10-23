@@ -46,6 +46,13 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 ### Configuration
 - `/setconfig` - Setzt Bot-Konfigurationen (nur für Admins)
 - `/showconfig` - Zeigt alle Bot-Konfigurationen an
+- `/setpermission` - Verwaltet Command-Berechtigungen für Discord-Rollen (nur Admins)
+
+### Permission-System
+- **Flexibles Rollen-System:** Weise Discord-Rollen Zugriff auf einzelne Commands zu
+- **Admin-Rechte:** Admins (in `.env` definiert) haben immer Zugriff auf alle Commands
+- **Per Command konfigurierbar:** Jeder Command kann individuell für verschiedene Rollen freigegeben werden
+- **Mehrere Rollen pro Command:** Unbegrenzt viele Rollen können Zugriff auf denselben Command haben
 
 ### Utility
 - `/embed` - Erstellt ein benutzerdefiniertes Embed mit Titel, Nachricht, Farbe und optionalen Bildern
@@ -115,6 +122,40 @@ Admins werden in der `.env` Datei definiert:
 ```env
 ADMIN_IDS=123456789012345678,987654321098765432
 ```
+**Admins haben automatisch Zugriff auf ALLE Commands.**
+
+### Command-Berechtigungen verwalten
+
+Mit `/setpermission` kannst du Discord-Rollen Zugriff auf einzelne Commands geben:
+
+#### Rolle Zugriff geben
+```
+/setpermission add command:clear rolle:@Moderator
+```
+Die Rolle `@Moderator` kann nun `/clear` nutzen.
+
+#### Mehrere Rollen für einen Command
+```
+/setpermission add command:teamwarn rolle:@Team-Leitung
+/setpermission add command:teamwarn rolle:@High-Team
+```
+Beide Rollen können nun `/teamwarn` nutzen.
+
+#### Rolle entfernen
+```
+/setpermission remove command:clear rolle:@Moderator
+```
+
+#### Alle Berechtigungen anzeigen
+```
+/setpermission list
+```
+Zeigt alle konfigurierten Command-Berechtigungen an.
+
+**Wichtig:**
+- Nur Admins können Berechtigungen verwalten
+- Admins haben immer Zugriff, auch ohne explizite Berechtigung
+- Commands ohne konfigurierte Rollen sind nur für Admins verfügbar
 
 ### Bot-Einstellungen
 Channels werden im Discord per Command konfiguriert:

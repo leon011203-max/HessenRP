@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+import { getCommandPermissions } from '../database/config.js';
 config();
 
 /**
@@ -11,9 +12,30 @@ export function isAdmin(userId) {
 
 /**
  * Prüft ob der User die Berechtigung hat, den Command auszuführen
+ * Admins haben immer Zugriff
+ * Andere User benötigen eine zugewiesene Rolle
  */
-export function hasPermission(interaction) {
-    return isAdmin(interaction.user.id);
+export function hasPermission(interaction, commandName = null) {
+    // Admins haben immer Zugriff
+    if (isAdmin(interaction.user.id)) {
+        return true;
+    }
+
+    // Wenn kein Command-Name angegeben wurde, nur Admin-Check
+    if (!commandName) {
+        return false;
+    }
+
+    // Prüfe ob der User eine Rolle hat die für diesen Command freigegeben ist
+    const allowedRoles = getCommandPermissions(interaction.guildId, commandName);
+
+    if (allowedRoles.length === 0) {
+        // Kein Role-Zugriff konfiguriert, nur Admins
+        return false;
+    }
+
+    // Prüfe ob User eine der erlaubten Rollen hat
+    return allowedRoles.some(roleId => interaction.member.roles.cache.has(roleId));
 }
 
 /**
