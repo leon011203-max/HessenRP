@@ -51,6 +51,7 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 - `/embed` - Erstellt ein benutzerdefiniertes Embed mit Titel, Nachricht, Farbe und optionalen Bildern
 - **Berechtigung:** Nur für User mit der spezifischen Embed-Rolle
 - `/verifypanel` - Erstellt ein Verify-Panel mit Button zur Verifizierung
+- `/clear` - Löscht eine bestimmte Anzahl von Nachrichten (1-100) im aktuellen Channel (nur Admins)
 
 ### Verify-System
 - **Automatische Rollen-Vergabe:** User klicken auf den Verify-Button und erhalten automatisch die konfigurierte Rolle
@@ -315,6 +316,20 @@ Oder ohne Channel-Angabe im aktuellen Channel:
 - Schönes grünes Embed mit Bestätigung
 - Zeigt welche Rolle vergeben wird
 
+### Nachrichten löschen
+
+**Verwendung:**
+```
+/clear anzahl:50
+```
+Löscht die letzten 50 Nachrichten im aktuellen Channel.
+
+**Hinweise:**
+- Nur Admins können diesen Command nutzen
+- Maximum: 100 Nachrichten auf einmal
+- Nur Nachrichten die jünger als 14 Tage sind können gelöscht werden (Discord Limitierung)
+- Der Bot benötigt die "Nachrichten verwalten" Berechtigung
+
 ## Projektstruktur
 
 ```
@@ -352,6 +367,7 @@ Der Bot benötigt folgende Discord-Berechtigungen:
 - Manage Roles
 - Kick Members
 - Manage Channels (für Ticket-System)
+- Manage Messages (für /clear Command)
 - Send Messages
 - Use Slash Commands
 - Read Message History
