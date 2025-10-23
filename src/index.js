@@ -8,6 +8,7 @@ import { getConfig } from './database/config.js';
 import { successEmbed } from './utils/embeds.js';
 import { cleanupOldWarnings } from './database/warnings.js';
 import { initTicketFiles } from './database/tickets.js';
+import { initFrakWarnsFile, cleanupOldFrakWarns } from './database/fraktionen.js';
 import { handleTicketCreate, handleTicketClaim, handleTicketAccept, handleTicketDeny, handleTicketClose } from './events/ticketHandler.js';
 
 config();
@@ -72,6 +73,12 @@ cleanupOldWarnings();
 // Ticket-System initialisieren
 initTicketFiles();
 
+// Fraktions-Warn System initialisieren
+initFrakWarnsFile();
+
+// Alte Fraktions-Warnungen bereinigen
+cleanupOldFrakWarns();
+
 // Event Handler
 client.once('ready', () => {
     console.log(`\n🤖 Bot ist online als ${client.user.tag}`);
@@ -79,6 +86,7 @@ client.once('ready', () => {
     // Täglich alte Warnungen bereinigen (alle 24 Stunden)
     setInterval(() => {
         cleanupOldWarnings();
+        cleanupOldFrakWarns();
     }, 24 * 60 * 60 * 1000);
 });
 

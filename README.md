@@ -23,6 +23,14 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 - **Leave:** Automatische Verabschiedungs-Nachricht wenn ein User den Server verlässt
 - Beide Systeme sind über separate Channels konfigurierbar
 
+### Fraktions-Management
+- `/frak offiziell` - Macht eine Fraktion offiziell (Grünes Embed)
+- `/frak warn` - Warnt eine Fraktion (Gelbes Embed)
+- `/frak warndelete` - Löscht eine Fraktions-Warnung
+- `/frak aufgelöst` - Löst eine Fraktion auf (Rotes Embed)
+- **Automatisches Ablaufen:** Fraktions-Warnungen werden nach 2 Wochen automatisch gelöscht
+- Alle Events werden in einem konfigurierbaren Fraktionen-Channel gepostet
+
 ### Ticket-System (RP-optimiert)
 - **Dropdown-Menu** mit 6 Kategorien: Support, Analyse, Donator, Fraktions-Antrag, High Team, Sonstiges
 - **Schöne Embeds:** Alle Ticket-Nachrichten sind farbcodierte Embeds
@@ -117,6 +125,12 @@ Hier werden Verabschiedungs-Nachrichten gepostet wenn Mitglieder den Server verl
 /setconfig key:leave_channel value:<ChannelID>
 ```
 
+#### Fraktionen Channel konfigurieren
+Hier werden alle Fraktions-Events gepostet (offiziell, warnungen, auflösungen):
+```
+/setconfig key:fraktionen_channel value:<ChannelID>
+```
+
 #### Konfiguration anzeigen
 ```
 /showconfig
@@ -189,6 +203,32 @@ Warnt einen Team-Member. Die Warnung wird gespeichert und im TeamUpdates Channel
 /deletewarn type:user warn_id:1
 ```
 
+### Fraktions-System nutzen
+
+#### Fraktion offiziell machen
+```
+/frak offiziell name:"Los Santos Police Department" beschreibung:"Offizielle Polizei-Fraktion"
+```
+Macht eine Fraktion offiziell. Ein grünes Embed wird im Fraktionen-Channel gepostet.
+
+#### Fraktion warnen
+```
+/frak warn name:"Grove Street" grund:"Regelverstoß bei RP-Situation"
+```
+Warnt eine Fraktion. Ein gelbes Embed wird gepostet und die Warnung läuft nach 2 Wochen automatisch ab.
+
+#### Fraktions-Warnung löschen
+```
+/frak warndelete warn_id:1
+```
+Löscht eine spezifische Warnung anhand ihrer ID.
+
+#### Fraktion auflösen
+```
+/frak aufgelöst name:"Ballas Gang" grund:"Inaktivität"
+```
+Löst eine Fraktion auf. Ein rotes Embed wird im Fraktionen-Channel gepostet.
+
 ### Ticket-System nutzen
 
 **Als User:**
@@ -216,21 +256,22 @@ HessenRP/
 │   │   ├── config/          # Konfigurationsbefehle
 │   │   ├── team/            # Team-Management Befehle
 │   │   ├── warnings/        # Warn-Management Befehle
-│   │   └── tickets/         # Ticket-System Befehle
+│   │   ├── tickets/         # Ticket-System Befehle
+│   │   └── fraktionen/      # Fraktions-Management Befehle
 │   ├── database/
 │   │   ├── init.js          # JSON-Dateien Initialisierung
 │   │   ├── config.js        # Config Management (JSON)
 │   │   ├── warnings.js      # Warn Management (JSON)
-│   │   └── tickets.js       # Ticket Management (JSON)
+│   │   ├── tickets.js       # Ticket Management (JSON)
+│   │   └── fraktionen.js    # Fraktions-Warn Management (JSON)
 │   ├── events/
-│   │   ├── welcome.js       # Welcome System Event Handler
 │   │   └── ticketHandler.js # Ticket Interaction Handler
 │   ├── utils/
 │   │   ├── permissions.js   # Berechtigungsprüfungen
 │   │   └── embeds.js        # Embed-Helpers
 │   ├── index.js             # Hauptdatei
 │   └── deploy-commands.js   # Command Deployment
-├── data/                    # JSON-Dateien für Daten (config, warnings, tickets)
+├── data/                    # JSON-Dateien für Daten (config, warnings, tickets, frak_warns)
 ├── .env                     # Umgebungsvariablen
 └── package.json
 ```
