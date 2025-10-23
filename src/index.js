@@ -8,6 +8,7 @@ import { getConfig } from './database/config.js';
 import { successEmbed } from './utils/embeds.js';
 import { cleanupOldWarnings } from './database/warnings.js';
 import { initTicketFiles } from './database/tickets.js';
+import { initFrakWarnsFile, cleanupOldFrakWarns } from './database/fraktionen.js';
 import { handleTicketCreate, handleTicketClaim, handleTicketAccept, handleTicketDeny, handleTicketClose } from './events/ticketHandler.js';
 
 config();
@@ -72,6 +73,12 @@ cleanupOldWarnings();
 // Ticket-System initialisieren
 initTicketFiles();
 
+// Fraktions-Warn System initialisieren
+initFrakWarnsFile();
+
+// Alte Fraktions-Warnungen bereinigen
+cleanupOldFrakWarns();
+
 // Event Handler
 client.once('ready', () => {
     console.log(`\n🤖 Bot ist online als ${client.user.tag}`);
@@ -79,6 +86,7 @@ client.once('ready', () => {
     // Täglich alte Warnungen bereinigen (alle 24 Stunden)
     setInterval(() => {
         cleanupOldWarnings();
+        cleanupOldFrakWarns();
     }, 24 * 60 * 60 * 1000);
 });
 
@@ -168,6 +176,42 @@ client.on('guildMemberAdd', async member => {
         console.log(`Willkommensnachricht für ${member.user.tag} gesendet`);
     } catch (error) {
         console.error('Fehler beim Senden der Willkommensnachricht:', error);
+    }
+});
+
+// Leave-Event für User die den Server verlassen
+client.on('guildMemberRemove', async member => {
+    try {
+        const leaveChannelId = getConfig(member.guild.id, 'leave_channel');
+
+        if (!leaveChannelId) {
+            console.log('Kein Leave Channel konfiguriert');
+            return;
+        }
+
+        const leaveChannel = member.guild.channels.cache.get(leaveChannelId);
+
+        if (!leaveChannel) {
+            console.log('Leave Channel nicht gefunden');
+            return;
+        }
+
+        const { EmbedBuilder } = await import('discord.js');
+        const leaveEmbed = new EmbedBuilder()
+            .setColor('#ff0000')
+            .setTitle('Auf Wiedersehen! 👋')
+            .setDescription(
+                `**${member.user.tag}** hat den Server verlassen.\n\n` +
+                `Wir wünschen dir alles Gute für die Zukunft!`
+            )
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .setTimestamp()
+            .setFooter({ text: `Mitglied seit ${member.joinedAt ? member.joinedAt.toLocaleDateString('de-DE') : 'Unbekannt'}` });
+
+        await leaveChannel.send({ embeds: [leaveEmbed] });
+        console.log(`Leave-Nachricht für ${member.user.tag} gesendet`);
+    } catch (error) {
+        console.error('Fehler beim Senden der Leave-Nachricht:', error);
     }
 });
 

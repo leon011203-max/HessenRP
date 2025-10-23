@@ -18,13 +18,24 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 - `/showwarns` - Zeigt alle Warnungen eines Users oder Teams an
 - **Automatisches Ablaufen:** Warnungen werden nach 2 Wochen automatisch gelöscht
 
-### Welcome System
-- Automatische Willkommensnachricht wenn ein User dem Server beitritt
-- Konfigurierbar über Welcome Channel
+### Welcome & Leave System
+- **Welcome:** Automatische Willkommensnachricht wenn ein User dem Server beitritt
+- **Leave:** Automatische Verabschiedungs-Nachricht wenn ein User den Server verlässt
+- Beide Systeme sind über separate Channels konfigurierbar
+
+### Fraktions-Management
+- `/frak offiziell` - Macht eine Fraktion offiziell (Grünes Embed)
+- `/frak warn` - Warnt eine Fraktion (Gelbes Embed)
+- `/frak warndelete` - Löscht eine Fraktions-Warnung
+- `/frak aufgelöst` - Löst eine Fraktion auf (Rotes Embed)
+- **Automatisches Ablaufen:** Fraktions-Warnungen werden nach 2 Wochen automatisch gelöscht
+- Alle Events werden in einem konfigurierbaren Fraktionen-Channel gepostet
 
 ### Ticket-System (RP-optimiert)
 - **Dropdown-Menu** mit 6 Kategorien: Support, Analyse, Donator, Fraktions-Antrag, High Team, Sonstiges
-- **Berechtigungssystem:** Pro Kategorie konfigurierbare Rollen
+- **Schöne Embeds:** Alle Ticket-Nachrichten sind farbcodierte Embeds
+- **Individuelle Kategorien:** Jede Ticket-Kategorie kann eine eigene Discord-Kategorie haben
+- **Berechtigungssystem:** Unbegrenzt viele Rollen pro Kategorie konfigurierbar
 - **Claim-System:** Teamler können Tickets claimen
 - **Status-Anzeige:** Automatische Umbenennung mit Emojis:
   - 🟠 Bei Bearbeitung (geclaimed)
@@ -35,6 +46,10 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 ### Configuration
 - `/setconfig` - Setzt Bot-Konfigurationen (nur für Admins)
 - `/showconfig` - Zeigt alle Bot-Konfigurationen an
+
+### Utility
+- `/embed` - Erstellt ein benutzerdefiniertes Embed mit Titel, Nachricht, Farbe und optionalen Bildern
+- **Berechtigung:** Nur für User mit der spezifischen Embed-Rolle
 
 ### Besonderheiten
 - **Ephemeral Commands:** Alle Command-Antworten sind nur für dich sichtbar (temporäre Nachrichten)
@@ -108,6 +123,18 @@ Hier werden Willkommensnachrichten für neue Server-Mitglieder gepostet:
 /setconfig key:welcome_channel value:<ChannelID>
 ```
 
+#### Leave Channel konfigurieren
+Hier werden Verabschiedungs-Nachrichten gepostet wenn Mitglieder den Server verlassen:
+```
+/setconfig key:leave_channel value:<ChannelID>
+```
+
+#### Fraktionen Channel konfigurieren
+Hier werden alle Fraktions-Events gepostet (offiziell, warnungen, auflösungen):
+```
+/setconfig key:fraktionen_channel value:<ChannelID>
+```
+
 #### Konfiguration anzeigen
 ```
 /showconfig
@@ -118,11 +145,19 @@ Hier werden Willkommensnachrichten für neue Server-Mitglieder gepostet:
 # 1. Panel-Channel setzen (wo das Ticket-Dropdown angezeigt wird)
 /ticketsetup panel channel:#tickets
 
-# 2. Ticket-Kategorie setzen (wo neue Ticket-Channels erstellt werden)
-/ticketsetup category category:Tickets
+# 2. Discord-Kategorie für jede Ticket-Kategorie setzen
+#    (Jede Ticket-Kategorie kann eine eigene Discord-Kategorie haben)
+/ticketsetup category ticketcategory:support discordcategory:Support-Tickets
+/ticketsetup category ticketcategory:analyse discordcategory:Analyse-Tickets
+/ticketsetup category ticketcategory:donator discordcategory:Donator-Tickets
+/ticketsetup category ticketcategory:fraktion discordcategory:Fraktions-Anträge
+/ticketsetup category ticketcategory:highteam discordcategory:High-Team-Tickets
+/ticketsetup category ticketcategory:sonstiges discordcategory:Sonstige-Tickets
 
-# 3. Berechtigungen pro Kategorie setzen
+# 3. Berechtigungen pro Kategorie setzen (unbegrenzt viele Rollen möglich)
+#    Führe den Befehl mehrfach aus, um mehrere Rollen hinzuzufügen:
 /ticketsetup permissions ticketcategory:support rolle:@Support
+/ticketsetup permissions ticketcategory:support rolle:@Team-Leitung
 /ticketsetup permissions ticketcategory:analyse rolle:@Analyse-Team
 /ticketsetup permissions ticketcategory:donator rolle:@Donator-Support
 /ticketsetup permissions ticketcategory:fraktion rolle:@Fraktions-Leitung
@@ -172,6 +207,32 @@ Warnt einen Team-Member. Die Warnung wird gespeichert und im TeamUpdates Channel
 /deletewarn type:user warn_id:1
 ```
 
+### Fraktions-System nutzen
+
+#### Fraktion offiziell machen
+```
+/frak offiziell name:"Los Santos Police Department" beschreibung:"Offizielle Polizei-Fraktion"
+```
+Macht eine Fraktion offiziell. Ein grünes Embed wird im Fraktionen-Channel gepostet.
+
+#### Fraktion warnen
+```
+/frak warn name:"Grove Street" grund:"Regelverstoß bei RP-Situation"
+```
+Warnt eine Fraktion. Ein gelbes Embed wird gepostet und die Warnung läuft nach 2 Wochen automatisch ab.
+
+#### Fraktions-Warnung löschen
+```
+/frak warndelete warn_id:1
+```
+Löscht eine spezifische Warnung anhand ihrer ID.
+
+#### Fraktion auflösen
+```
+/frak aufgelöst name:"Ballas Gang" grund:"Inaktivität"
+```
+Löst eine Fraktion auf. Ein rotes Embed wird im Fraktionen-Channel gepostet.
+
 ### Ticket-System nutzen
 
 **Als User:**
@@ -190,6 +251,35 @@ Warnt einen Team-Member. Die Warnung wird gespeichert und im TeamUpdates Channel
 4. **Schließen:** Klicke auf "Schließen" um das Ticket zu schließen
    - Channel wird nach 5 Sekunden gelöscht
 
+### Benutzerdefinierte Embeds erstellen
+
+Mit dem `/embed` Command kannst du schöne Embeds erstellen:
+
+**Einfaches Embed:**
+```
+/embed titel:"Serverankündigung" nachricht:"Wichtige Information für alle Spieler!"
+```
+
+**Embed mit Farbe und Channel:**
+```
+/embed titel:"Event Ankündigung" nachricht:"Heute um 20 Uhr findet ein großes Event statt!" farbe:Grün channel:#ankündigungen
+```
+
+**Embed mit Bildern:**
+```
+/embed titel:"News" nachricht:"Neue Features wurden hinzugefügt" farbe:Blau bild_url:https://example.com/image.png thumbnail_url:https://example.com/thumb.png
+```
+
+**Optionen:**
+- `titel` - Titel des Embeds (erforderlich)
+- `nachricht` - Beschreibung/Text des Embeds (erforderlich)
+- `channel` - Wo das Embed gepostet werden soll (optional, Standard: aktueller Channel)
+- `farbe` - Farbe des Embeds: Rot, Grün, Blau, Gelb, Orange, Lila, Rosa, Schwarz (optional, Standard: Blau)
+- `bild_url` - URL für ein großes Bild im Embed (optional)
+- `thumbnail_url` - URL für ein kleines Thumbnail (optional)
+
+**Hinweis:** Nur User mit der Embed-Rolle (ID: `1430289484993269770`) können diesen Command nutzen.
+
 ## Projektstruktur
 
 ```
@@ -198,17 +288,24 @@ HessenRP/
 │   ├── commands/
 │   │   ├── config/          # Konfigurationsbefehle
 │   │   ├── team/            # Team-Management Befehle
-│   │   └── warnings/        # Warn-Management Befehle
+│   │   ├── warnings/        # Warn-Management Befehle
+│   │   ├── tickets/         # Ticket-System Befehle
+│   │   ├── fraktionen/      # Fraktions-Management Befehle
+│   │   └── utility/         # Utility Befehle (Embed, etc.)
 │   ├── database/
 │   │   ├── init.js          # JSON-Dateien Initialisierung
 │   │   ├── config.js        # Config Management (JSON)
-│   │   └── warnings.js      # Warn Management (JSON)
+│   │   ├── warnings.js      # Warn Management (JSON)
+│   │   ├── tickets.js       # Ticket Management (JSON)
+│   │   └── fraktionen.js    # Fraktions-Warn Management (JSON)
+│   ├── events/
+│   │   └── ticketHandler.js # Ticket Interaction Handler
 │   ├── utils/
 │   │   ├── permissions.js   # Berechtigungsprüfungen
 │   │   └── embeds.js        # Embed-Helpers
 │   ├── index.js             # Hauptdatei
 │   └── deploy-commands.js   # Command Deployment
-├── data/                    # JSON-Dateien für Daten (config.json, warnings.json, team_warnings.json)
+├── data/                    # JSON-Dateien für Daten (config, warnings, tickets, frak_warns)
 ├── .env                     # Umgebungsvariablen
 └── package.json
 ```
@@ -218,15 +315,11 @@ HessenRP/
 Der Bot benötigt folgende Discord-Berechtigungen:
 - Manage Roles
 - Kick Members
+- Manage Channels (für Ticket-System)
 - Send Messages
 - Use Slash Commands
 - Read Message History
 - View Channels
-
-## Zukünftige Features
-
-- Ticket System (geplant)
-- Weitere modulare Erweiterungen
 
 ## Lizenz
 

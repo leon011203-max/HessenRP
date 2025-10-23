@@ -1,5 +1,5 @@
-import { SlashCommandBuilder, ChannelType, PermissionFlagsBits } from 'discord.js';
-import { getTicketConfig, setTicketConfig } from '../../database/tickets.js';
+import { SlashCommandBuilder, ChannelType } from 'discord.js';
+import { getTicketConfig, setTicketConfig, setCategoryChannel, addCategoryPermission } from '../../database/tickets.js';
 import { hasPermission, noPermissionReply } from '../../utils/permissions.js';
 import { successEmbed } from '../../utils/embeds.js';
 
@@ -19,16 +19,28 @@ export default {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('category')
-                .setDescription('Setzt die Kategorie für Ticket-Channels')
+                .setDescription('Setzt die Discord-Kategorie für eine Ticket-Kategorie')
+                .addStringOption(option =>
+                    option.setName('ticketcategory')
+                        .setDescription('Ticket-Kategorie')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'Support', value: 'support' },
+                            { name: 'Analyse', value: 'analyse' },
+                            { name: 'Donator', value: 'donator' },
+                            { name: 'Fraktions-Antrag', value: 'fraktion' },
+                            { name: 'High Team', value: 'highteam' },
+                            { name: 'Sonstiges', value: 'sonstiges' }
+                        ))
                 .addChannelOption(option =>
-                    option.setName('category')
-                        .setDescription('Die Kategorie für Ticket-Channels')
+                    option.setName('discordcategory')
+                        .setDescription('Discord-Kategorie wo Tickets erstellt werden')
                         .addChannelTypes(ChannelType.GuildCategory)
                         .setRequired(true)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('permissions')
-                .setDescription('Setzt Berechtigungen für eine Ticket-Kategorie')
+                .setDescription('Fügt eine Rolle zu den Berechtigungen einer Ticket-Kategorie hinzu')
                 .addStringOption(option =>
                     option.setName('ticketcategory')
                         .setDescription('Ticket-Kategorie')
@@ -43,7 +55,7 @@ export default {
                         ))
                 .addRoleOption(option =>
                     option.setName('rolle')
-                        .setDescription('Rolle mit Berechtigung')
+                        .setDescription('Rolle mit Berechtigung (kann mehrfach ausgeführt werden)')
                         .setRequired(true))),
 
     async execute(interaction) {
@@ -66,13 +78,14 @@ export default {
 
             await interaction.reply({ embeds: [embed], ephemeral: true });
         } else if (subcommand === 'category') {
-            const category = interaction.options.getChannel('category');
-            config.ticketCategoryId = category.id;
-            setTicketConfig(interaction.guildId, config);
+            const ticketCategory = interaction.options.getString('ticketcategory');
+            const discordCategory = interaction.options.getChannel('discordcategory');
+
+            setCategoryChannel(interaction.guildId, ticketCategory, discordCategory.id);
 
             const embed = successEmbed(
                 'Ticket-Kategorie gesetzt',
-                `Neue Tickets werden in der Kategorie ${category.name} erstellt.`
+                `**${ticketCategory}**-Tickets werden in der Kategorie **${discordCategory.name}** erstellt.`
             );
 
             await interaction.reply({ embeds: [embed], ephemeral: true });
@@ -80,20 +93,15 @@ export default {
             const ticketCategory = interaction.options.getString('ticketcategory');
             const role = interaction.options.getRole('rolle');
 
-            if (!config.categories) config.categories = {};
-            if (!config.categories[ticketCategory]) {
-                config.categories[ticketCategory] = [];
-            }
+            addCategoryPermission(interaction.guildId, ticketCategory, role.id);
 
-            if (!config.categories[ticketCategory].includes(role.id)) {
-                config.categories[ticketCategory].push(role.id);
-            }
-
-            setTicketConfig(interaction.guildId, config);
+            const config = getTicketConfig(interaction.guildId);
+            const roleCount = config.categoryPermissions[ticketCategory]?.length || 0;
 
             const embed = successEmbed(
                 'Berechtigung hinzugefügt',
-                `Rolle ${role} hat nun Zugriff auf **${ticketCategory}**-Tickets.`
+                `Rolle ${role} hat nun Zugriff auf **${ticketCategory}**-Tickets.\n\n` +
+                `**Gesamt Rollen:** ${roleCount}`
             );
 
             await interaction.reply({ embeds: [embed], ephemeral: true });

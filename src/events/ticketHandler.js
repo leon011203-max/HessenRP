@@ -1,4 +1,4 @@
-import { ChannelType, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { ChannelType, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 import { createTicket, getTicketByChannel, updateTicketStatus, deleteTicket, getTicketConfig } from '../database/tickets.js';
 import { successEmbed, errorEmbed } from '../utils/embeds.js';
 
@@ -15,18 +15,21 @@ export async function handleTicketCreate(interaction) {
     const category = interaction.values[0];
     const config = getTicketConfig(interaction.guild.id);
 
-    if (!config.ticketCategoryId) {
-        const embed = errorEmbed('Setup unvollständig', 'Ticket-Kategorie wurde nicht konfiguriert.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+    if (!config.categoryChannels || !config.categoryChannels[category]) {
+        const embed = errorEmbed(
+            'Setup unvollständig',
+            `Die Kategorie **${category}** wurde nicht konfiguriert.\nBitte konfiguriere sie mit:\n\`/ticketsetup category ticketcategory:${category}\``
+        );
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Erstelle Ticket-Channel
     try {
-        const ticketCategory = interaction.guild.channels.cache.get(config.ticketCategoryId);
+        const ticketCategory = interaction.guild.channels.cache.get(config.categoryChannels[category]);
 
         if (!ticketCategory) {
-            const embed = errorEmbed('Fehler', 'Ticket-Kategorie nicht gefunden.');
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            const embed = errorEmbed('Fehler', `Kategorie für **${category}** nicht gefunden.`);
+            return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         const ticketChannel = await interaction.guild.channels.create({
@@ -46,8 +49,8 @@ export async function handleTicketCreate(interaction) {
         });
 
         // Füge Berechtigungen für die konfigurierten Rollen hinzu
-        if (config.categories && config.categories[category]) {
-            for (const roleId of config.categories[category]) {
+        if (config.categoryPermissions && config.categoryPermissions[category]) {
+            for (const roleId of config.categoryPermissions[category]) {
                 await ticketChannel.permissionOverwrites.create(roleId, {
                     ViewChannel: true,
                     SendMessages: true,
@@ -59,45 +62,44 @@ export async function handleTicketCreate(interaction) {
         // Speichere Ticket in Datenbank
         const ticket = createTicket(interaction.guild.id, ticketChannel.id, interaction.user.id, category);
 
-        // Erstelle Ticket-Embed mit Buttons
+        // Erstelle Embed
         const ticketEmbed = new EmbedBuilder()
-            .setColor(0x0099ff)
+            .setColor('#0099ff')
             .setTitle(`🎫 Ticket: ${CATEGORY_NAMES[category]}`)
             .setDescription(
                 `Hallo ${interaction.user}!\n\n` +
-                `Dein Ticket wurde erstellt. Ein Team-Mitglied wird sich bald um dein Anliegen kümmern.\n\n` +
-                `**Kategorie:** ${CATEGORY_NAMES[category]}\n` +
-                `**Ticket-ID:** #${ticket.id}`
+                `Dein Ticket wurde erstellt. Ein Team-Mitglied wird sich bald um dein Anliegen kümmern.`
             )
-            .setFooter({ text: 'Bitte beschreibe dein Anliegen' })
-            .setTimestamp();
+            .addFields(
+                { name: '📋 Kategorie', value: CATEGORY_NAMES[category], inline: true },
+                { name: '🔢 Ticket-ID', value: `#${ticket.id}`, inline: true }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'HessenRP Ticket-System' });
 
-        const buttons = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('ticket_claim')
-                    .setLabel('Claim')
-                    .setEmoji('✋')
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId('ticket_close')
-                    .setLabel('Schließen')
-                    .setEmoji('🔒')
-                    .setStyle(ButtonStyle.Danger)
-            );
+        // Erstelle Buttons
+        const claimButton = new ButtonBuilder()
+            .setCustomId('ticket_claim')
+            .setLabel('Claim')
+            .setStyle(ButtonStyle.Primary);
 
-        await ticketChannel.send({ embeds: [ticketEmbed], components: [buttons] });
+        const row = new ActionRowBuilder().addComponents(claimButton);
+
+        await ticketChannel.send({
+            embeds: [ticketEmbed],
+            components: [row]
+        });
 
         const embed = successEmbed(
             'Ticket erstellt',
             `Dein Ticket wurde erstellt: ${ticketChannel}`
         );
 
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     } catch (error) {
         console.error('Fehler beim Erstellen des Tickets:', error);
         const embed = errorEmbed('Fehler', 'Konnte Ticket nicht erstellen.');
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 }
 
@@ -106,12 +108,12 @@ export async function handleTicketClaim(interaction) {
 
     if (!ticket) {
         const embed = errorEmbed('Fehler', 'Ticket nicht gefunden.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     if (ticket.claimed_by) {
         const embed = errorEmbed('Bereits beansprucht', `Dieses Ticket wurde bereits von <@${ticket.claimed_by}> beansprucht.`);
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Update Ticket-Status
@@ -120,33 +122,39 @@ export async function handleTicketClaim(interaction) {
     // Update Channel-Name mit orangenem Kreis
     await interaction.channel.setName(`🟠-${interaction.channel.name}`);
 
-    const embed = successEmbed(
-        'Ticket beansprucht',
-        `${interaction.user} bearbeitet nun dieses Ticket.`
-    );
+    // Erstelle Embed
+    const claimedEmbed = new EmbedBuilder()
+        .setColor('#ff9900')
+        .setTitle('✋ Ticket beansprucht')
+        .setDescription(
+            `${interaction.user} bearbeitet nun dieses Ticket.\n\n` +
+            `Nutze die Buttons um das Ticket anzunehmen oder abzulehnen.`
+        )
+        .setTimestamp()
+        .setFooter({ text: 'HessenRP Ticket-System' });
 
-    // Neue Buttons
-    const buttons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('ticket_accept')
-                .setLabel('Annehmen')
-                .setEmoji('✅')
-                .setStyle(ButtonStyle.Success),
-            new ButtonBuilder()
-                .setCustomId('ticket_deny')
-                .setLabel('Ablehnen')
-                .setEmoji('❌')
-                .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
-                .setCustomId('ticket_close')
-                .setLabel('Schließen')
-                .setEmoji('🔒')
-                .setStyle(ButtonStyle.Secondary)
-        );
+    // Erstelle Buttons
+    const acceptButton = new ButtonBuilder()
+        .setCustomId('ticket_accept')
+        .setLabel('Annehmen')
+        .setStyle(ButtonStyle.Success);
 
-    await interaction.update({ components: [buttons] });
-    await interaction.channel.send({ embeds: [embed] });
+    const denyButton = new ButtonBuilder()
+        .setCustomId('ticket_deny')
+        .setLabel('Ablehnen')
+        .setStyle(ButtonStyle.Danger);
+
+    const closeButton = new ButtonBuilder()
+        .setCustomId('ticket_close')
+        .setLabel('Schließen')
+        .setStyle(ButtonStyle.Secondary);
+
+    const row = new ActionRowBuilder().addComponents(acceptButton, denyButton, closeButton);
+
+    await interaction.update({
+        embeds: [claimedEmbed],
+        components: [row]
+    });
 }
 
 export async function handleTicketAccept(interaction) {
@@ -154,7 +162,7 @@ export async function handleTicketAccept(interaction) {
 
     if (!ticket) {
         const embed = errorEmbed('Fehler', 'Ticket nicht gefunden.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Update Ticket-Status
@@ -164,23 +172,26 @@ export async function handleTicketAccept(interaction) {
     const newName = interaction.channel.name.replace(/🟠-/, '✅-');
     await interaction.channel.setName(newName);
 
-    const embed = successEmbed(
-        'Ticket angenommen',
-        `Dieses Ticket wurde von ${interaction.user} angenommen.`
-    );
+    // Erstelle Embed
+    const acceptedEmbed = new EmbedBuilder()
+        .setColor('#00ff00')
+        .setTitle('✅ Ticket angenommen')
+        .setDescription(`Dieses Ticket wurde von ${interaction.user} angenommen.`)
+        .setTimestamp()
+        .setFooter({ text: 'HessenRP Ticket-System' });
 
-    // Button zum Schließen
-    const buttons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('ticket_close')
-                .setLabel('Schließen')
-                .setEmoji('🔒')
-                .setStyle(ButtonStyle.Danger)
-        );
+    // Erstelle Schließen-Button
+    const closeButton = new ButtonBuilder()
+        .setCustomId('ticket_close')
+        .setLabel('Schließen')
+        .setStyle(ButtonStyle.Danger);
 
-    await interaction.update({ components: [buttons] });
-    await interaction.channel.send({ embeds: [embed] });
+    const row = new ActionRowBuilder().addComponents(closeButton);
+
+    await interaction.update({
+        embeds: [acceptedEmbed],
+        components: [row]
+    });
 }
 
 export async function handleTicketDeny(interaction) {
@@ -188,7 +199,7 @@ export async function handleTicketDeny(interaction) {
 
     if (!ticket) {
         const embed = errorEmbed('Fehler', 'Ticket nicht gefunden.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
     // Update Ticket-Status
@@ -198,23 +209,26 @@ export async function handleTicketDeny(interaction) {
     const newName = interaction.channel.name.replace(/🟠-/, '❌-');
     await interaction.channel.setName(newName);
 
-    const embed = errorEmbed(
-        'Ticket abgelehnt',
-        `Dieses Ticket wurde von ${interaction.user} abgelehnt.`
-    );
+    // Erstelle Embed
+    const deniedEmbed = new EmbedBuilder()
+        .setColor('#ff0000')
+        .setTitle('❌ Ticket abgelehnt')
+        .setDescription(`Dieses Ticket wurde von ${interaction.user} abgelehnt.`)
+        .setTimestamp()
+        .setFooter({ text: 'HessenRP Ticket-System' });
 
-    // Button zum Schließen
-    const buttons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('ticket_close')
-                .setLabel('Schließen')
-                .setEmoji('🔒')
-                .setStyle(ButtonStyle.Danger)
-        );
+    // Erstelle Schließen-Button
+    const closeButton = new ButtonBuilder()
+        .setCustomId('ticket_close')
+        .setLabel('Schließen')
+        .setStyle(ButtonStyle.Danger);
 
-    await interaction.update({ components: [buttons] });
-    await interaction.channel.send({ embeds: [embed] });
+    const row = new ActionRowBuilder().addComponents(closeButton);
+
+    await interaction.update({
+        embeds: [deniedEmbed],
+        components: [row]
+    });
 }
 
 export async function handleTicketClose(interaction) {
@@ -222,15 +236,21 @@ export async function handleTicketClose(interaction) {
 
     if (!ticket) {
         const embed = errorEmbed('Fehler', 'Ticket nicht gefunden.');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
+        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    const embed = successEmbed(
-        'Ticket wird geschlossen',
-        'Dieser Channel wird in 5 Sekunden gelöscht.'
-    );
+    // Erstelle Embed
+    const closingEmbed = new EmbedBuilder()
+        .setColor('#808080')
+        .setTitle('🔒 Ticket wird geschlossen')
+        .setDescription('Dieser Channel wird in **5 Sekunden** gelöscht.')
+        .setTimestamp()
+        .setFooter({ text: 'HessenRP Ticket-System' });
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.update({
+        embeds: [closingEmbed],
+        components: []
+    });
 
     // Lösche Ticket aus Datenbank
     deleteTicket(interaction.channel.id);

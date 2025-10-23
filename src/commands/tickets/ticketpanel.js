@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, MessageFlags } from 'discord.js';
 import { getTicketConfig } from '../../database/tickets.js';
 import { hasPermission, noPermissionReply } from '../../utils/permissions.js';
 import { successEmbed, errorEmbed } from '../../utils/embeds.js';
@@ -15,12 +15,12 @@ export default {
 
         const config = getTicketConfig(interaction.guildId);
 
-        if (!config.panelChannelId || !config.ticketCategoryId) {
+        if (!config.panelChannelId) {
             const embed = errorEmbed(
                 'Setup unvollständig',
-                'Bitte konfiguriere zuerst:\n`/ticketsetup panel` und `/ticketsetup category`'
+                'Bitte konfiguriere zuerst:\n`/ticketsetup panel`'
             );
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         const channel = interaction.guild.channels.cache.get(config.panelChannelId);
@@ -30,7 +30,7 @@ export default {
                 'Channel nicht gefunden',
                 'Der konfigurierte Panel-Channel existiert nicht mehr.'
             );
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         const panelEmbed = new EmbedBuilder()
@@ -101,6 +101,6 @@ export default {
             `Das Ticket-Panel wurde in ${channel} erstellt.`
         );
 
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 };
