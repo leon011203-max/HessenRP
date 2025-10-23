@@ -47,6 +47,10 @@ Ein modularer Discord Bot für Team-Management mit Slash Commands (Discord Compo
 - `/setconfig` - Setzt Bot-Konfigurationen (nur für Admins)
 - `/showconfig` - Zeigt alle Bot-Konfigurationen an
 
+### Utility
+- `/embed` - Erstellt ein benutzerdefiniertes Embed mit Titel, Nachricht, Farbe und optionalen Bildern
+- **Berechtigung:** Nur für User mit der spezifischen Embed-Rolle
+
 ### Besonderheiten
 - **Ephemeral Commands:** Alle Command-Antworten sind nur für dich sichtbar (temporäre Nachrichten)
 - **Öffentliche Logs:** Team-Events werden im TeamUpdates Channel für alle sichtbar gepostet
@@ -247,6 +251,35 @@ Löst eine Fraktion auf. Ein rotes Embed wird im Fraktionen-Channel gepostet.
 4. **Schließen:** Klicke auf "Schließen" um das Ticket zu schließen
    - Channel wird nach 5 Sekunden gelöscht
 
+### Benutzerdefinierte Embeds erstellen
+
+Mit dem `/embed` Command kannst du schöne Embeds erstellen:
+
+**Einfaches Embed:**
+```
+/embed titel:"Serverankündigung" nachricht:"Wichtige Information für alle Spieler!"
+```
+
+**Embed mit Farbe und Channel:**
+```
+/embed titel:"Event Ankündigung" nachricht:"Heute um 20 Uhr findet ein großes Event statt!" farbe:Grün channel:#ankündigungen
+```
+
+**Embed mit Bildern:**
+```
+/embed titel:"News" nachricht:"Neue Features wurden hinzugefügt" farbe:Blau bild_url:https://example.com/image.png thumbnail_url:https://example.com/thumb.png
+```
+
+**Optionen:**
+- `titel` - Titel des Embeds (erforderlich)
+- `nachricht` - Beschreibung/Text des Embeds (erforderlich)
+- `channel` - Wo das Embed gepostet werden soll (optional, Standard: aktueller Channel)
+- `farbe` - Farbe des Embeds: Rot, Grün, Blau, Gelb, Orange, Lila, Rosa, Schwarz (optional, Standard: Blau)
+- `bild_url` - URL für ein großes Bild im Embed (optional)
+- `thumbnail_url` - URL für ein kleines Thumbnail (optional)
+
+**Hinweis:** Nur User mit der Embed-Rolle (ID: `1430289484993269770`) können diesen Command nutzen.
+
 ## Projektstruktur
 
 ```
@@ -257,7 +290,8 @@ HessenRP/
 │   │   ├── team/            # Team-Management Befehle
 │   │   ├── warnings/        # Warn-Management Befehle
 │   │   ├── tickets/         # Ticket-System Befehle
-│   │   └── fraktionen/      # Fraktions-Management Befehle
+│   │   ├── fraktionen/      # Fraktions-Management Befehle
+│   │   └── utility/         # Utility Befehle (Embed, etc.)
 │   ├── database/
 │   │   ├── init.js          # JSON-Dateien Initialisierung
 │   │   ├── config.js        # Config Management (JSON)
