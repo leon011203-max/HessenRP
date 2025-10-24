@@ -11,11 +11,14 @@ export async function handleVerify(interaction) {
         return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    const verifyRoleId = process.env.VERIFY_ROLE_ID;
+    // Parse mehrere Rollen-IDs (kommagetrennt)
+    const verifyRoleIds = process.env.VERIFY_ROLE_ID.split(',').map(id => id.trim());
     const member = interaction.member;
 
-    // Prüfe ob User bereits die Rolle hat
-    if (member.roles.cache.has(verifyRoleId)) {
+    // Prüfe ob User bereits eine der Verify-Rollen hat
+    const hasVerifyRole = verifyRoleIds.some(roleId => member.roles.cache.has(roleId));
+
+    if (hasVerifyRole) {
         const embed = new EmbedBuilder()
             .setColor('#ffff00')
             .setTitle('⚠️ Bereits verifiziert')
@@ -25,24 +28,40 @@ export async function handleVerify(interaction) {
     }
 
     try {
-        // Füge die Verify-Rolle hinzu
-        await member.roles.add(verifyRoleId);
+        // Füge alle Verify-Rollen hinzu
+        const addedRoles = [];
+        for (const roleId of verifyRoleIds) {
+            const role = interaction.guild.roles.cache.get(roleId);
+            if (role) {
+                await member.roles.add(roleId);
+                addedRoles.push(role);
+            }
+        }
 
-        const role = interaction.guild.roles.cache.get(verifyRoleId);
+        if (addedRoles.length === 0) {
+            const embed = new EmbedBuilder()
+                .setColor('#ff0000')
+                .setTitle('❌ Fehler')
+                .setDescription('Keine gültigen Verify-Rollen gefunden. Bitte kontaktiere einen Admin.');
+
+            return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        }
+
+        const roleNames = addedRoles.map(r => r.toString()).join(', ');
 
         const embed = new EmbedBuilder()
             .setColor('#00ff00')
             .setTitle('✅ Erfolgreich verifiziert')
             .setDescription(
                 `Willkommen ${member}!\n\n` +
-                `Du hast die Rolle ${role} erhalten und hast nun Zugriff auf alle Channels.`
+                `Du hast ${addedRoles.length > 1 ? 'die Rollen' : 'die Rolle'} ${roleNames} erhalten und hast nun Zugriff auf alle Channels.`
             )
             .setTimestamp()
             .setFooter({ text: 'HessenRP Verify-System' });
 
         await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 
-        console.log(`✅ ${member.user.tag} wurde verifiziert`);
+        console.log(`✅ ${member.user.tag} wurde verifiziert (${addedRoles.length} Rolle(n))`);
     } catch (error) {
         console.error('Fehler beim Verifizieren:', error);
 

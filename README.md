@@ -334,7 +334,11 @@ Mit dem `/embed` Command kannst du schöne Embeds erstellen:
 **Setup:**
 1. Setze die `VERIFY_ROLE_ID` in deiner `.env` Datei:
 ```env
+# Einzelne Rolle:
 VERIFY_ROLE_ID=1234567890123456789
+
+# Oder mehrere Rollen (kommagetrennt):
+VERIFY_ROLE_ID=1234567890123456789,9876543210987654321
 ```
 
 2. Erstelle das Verify-Panel:

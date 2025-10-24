@@ -26,17 +26,30 @@ export default {
             return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
-        // Prüfe ob die Rolle existiert
-        const verifyRole = interaction.guild.roles.cache.get(process.env.VERIFY_ROLE_ID);
-        if (!verifyRole) {
+        // Parse mehrere Rollen-IDs (kommagetrennt)
+        const verifyRoleIds = process.env.VERIFY_ROLE_ID.split(',').map(id => id.trim());
+
+        // Prüfe ob die Rollen existieren
+        const verifyRoles = [];
+        for (const roleId of verifyRoleIds) {
+            const role = interaction.guild.roles.cache.get(roleId);
+            if (role) {
+                verifyRoles.push(role);
+            }
+        }
+
+        if (verifyRoles.length === 0) {
             const embed = errorEmbed(
-                'Verify-Rolle nicht gefunden',
-                `Die Rolle mit ID \`${process.env.VERIFY_ROLE_ID}\` existiert nicht auf diesem Server.`
+                'Verify-Rollen nicht gefunden',
+                `Keine der konfigurierten Rollen wurden auf diesem Server gefunden.\nKonfigurierte IDs: \`${process.env.VERIFY_ROLE_ID}\``
             );
             return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         const channel = interaction.options.getChannel('channel') || interaction.channel;
+
+        // Erstelle Rollenliste
+        const rolesList = verifyRoles.map(r => r.toString()).join(', ');
 
         // Erstelle Verify-Embed
         const verifyEmbed = new EmbedBuilder()
@@ -48,7 +61,7 @@ export default {
                 'Klicke einfach auf den Button unten um dich zu verifizieren!'
             )
             .addFields(
-                { name: '📋 Du erhältst folgende Rolle:', value: `${verifyRole}`, inline: false }
+                { name: `📋 Du erhältst ${verifyRoles.length > 1 ? 'folgende Rollen' : 'folgende Rolle'}:`, value: rolesList, inline: false }
             )
             .setFooter({ text: 'HessenRP Verify-System' })
             .setTimestamp();
